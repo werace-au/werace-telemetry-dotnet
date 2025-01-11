@@ -1,0 +1,34 @@
+version: "1.0"
+metadata:
+  title: "Complex Test"
+  description: "Test Description"
+types:
+  vector3:
+    description: "3D vector"
+    type: struct
+    fields:
+      - name: x
+        type: float32
+        dimensions: 0
+        description: "X component"
+      - name: y
+        type: float32
+        dimensions: 0
+        description: "Y component"
+      - name: z
+        type: float32
+        dimensions: 0
+        description: "Z component"
+session:
+  description: "Basic session information"
+  fields:
+    - name: type
+      type: uint32
+      dimensions: 0
+      description: "Session type identifier"
+channels:
+  - name: position
+    type: vector3
+    dimensions: 0
+    description: "Position"
+    tags: ["required"]

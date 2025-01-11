@@ -1,0 +1,31 @@
+version: "1.0"
+metadata:
+  title: "Array Test"
+  description: "Test Description"
+types:
+  sensor_readings:
+    description: "Sensor data"
+    type: struct
+    fields:
+      - name: temperatures
+        type: float32
+        dimensions: 4
+        description: "Temperature readings"
+        unit: "celsius"
+session:
+  description: "Test session information"
+  fields:
+    - name: type
+      type: uint32
+      dimensions: 0
+      description: "Session type identifier"
+    - name: name
+      type: uint32
+      dimensions: 0
+      description: "Session name"
+channels:
+  - name: sensors
+    type: sensor_readings
+    dimensions: 2
+    description: "Sensor array"
+    tags: ["data"]

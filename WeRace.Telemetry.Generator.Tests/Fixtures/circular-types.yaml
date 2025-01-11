@@ -1,0 +1,34 @@
+version: "1.0"
+metadata:
+  title: "Test"
+  description: "Test"
+types:
+  type_a:
+    description: "Type A"
+    type: struct
+    fields:
+      - name: b
+        type: type_b
+        dimensions: 0
+        description: "Field B"
+  type_b:
+    description: "Type B"
+    type: struct
+    fields:
+      - name: a
+        type: type_a
+        dimensions: 0
+        description: "Field A"
+session:
+  description: "Test session"
+  fields:
+    - name: type
+      type: uint32
+      dimensions: 0
+      description: "Session type"
+channels:
+  - name: test
+    type: type_a
+    dimensions: 0
+    description: "Test"
+    tags: []

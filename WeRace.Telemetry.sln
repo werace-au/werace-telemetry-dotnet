@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry.Sample", "WeRace.Telemetry.Sample\WeRace.Telemetry.Sample.csproj", "{83681ED5-C6EF-4768-AE0E-DE20212337DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry.Generator", "WeRace.Telemetry.Generator\WeRace.Telemetry.Generator.csproj", "{9C1BEF91-8ED4-4AE4-B346-337B158E8F02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry.Generator.Tests", "WeRace.Telemetry.Generator.Tests\WeRace.Telemetry.Generator.Tests.csproj", "{1CA3FEC4-B909-4FF9-A1A2-E66A914A41E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry", "WeRace.Telemetry\WeRace.Telemetry.csproj", "{3EAF66B4-DDA7-451F-8B82-7416BF230D81}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83681ED5-C6EF-4768-AE0E-DE20212337DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83681ED5-C6EF-4768-AE0E-DE20212337DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83681ED5-C6EF-4768-AE0E-DE20212337DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83681ED5-C6EF-4768-AE0E-DE20212337DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C1BEF91-8ED4-4AE4-B346-337B158E8F02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C1BEF91-8ED4-4AE4-B346-337B158E8F02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C1BEF91-8ED4-4AE4-B346-337B158E8F02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C1BEF91-8ED4-4AE4-B346-337B158E8F02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CA3FEC4-B909-4FF9-A1A2-E66A914A41E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CA3FEC4-B909-4FF9-A1A2-E66A914A41E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CA3FEC4-B909-4FF9-A1A2-E66A914A41E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CA3FEC4-B909-4FF9-A1A2-E66A914A41E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
