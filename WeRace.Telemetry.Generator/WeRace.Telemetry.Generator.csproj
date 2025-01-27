@@ -1,6 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>WeRace.Telemetry.Generator</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Kevin O'Neill</Authors>
+    <Description>A source generator supporting the creation of frames and session structures for WeRace.Telemetry</Description>
+    <PackageTags>telemetry;iracing;raceroom</PackageTags>
+    <RepositoryUrl>https://github.com/werace-au/werace-telemetry-dotnet</RepositoryUrl>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
