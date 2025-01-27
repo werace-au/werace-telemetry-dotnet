@@ -3,7 +3,13 @@ using System.Text;
 
 namespace WeRace.Telemetry;
 
-public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct where FRAME : struct {
+/// <summary>
+/// Handles writing telemetry data to a stream.
+/// </summary>
+/// <typeparam name="SESSION">The session type with a fixed size structure.</typeparam>
+/// <typeparam name="FRAME">The frame type with a fixed size structure.</typeparam>
+public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct where FRAME : struct
+{
   private readonly Stream _stream;
   private readonly ulong _sampleRate;
   private readonly Dictionary<string, string> _metadata;
@@ -17,7 +23,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
   private static int GetHeaderSize() => SpanReader.GetAlignedSize<FrameHeader>();
   private static int GetTotalFrameSize() => GetFrameSize() + GetHeaderSize() + SpanReader.GetPadding(GetFrameSize() + GetHeaderSize());
 
-  public Writer(Stream stream, ulong sampleRate, IReadOnlyDictionary<string, string>? metadata = null) {
+  public Writer(Stream stream, ulong sampleRate, IReadOnlyDictionary<string, string>? metadata = null)
+  {
     ArgumentNullException.ThrowIfNull(stream);
     ArgumentOutOfRangeException.ThrowIfZero(sampleRate);
 
@@ -32,7 +39,13 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _writeBuffer = new byte[Math.Max(1024, GetTotalFrameSize())];
   }
 
-  public void BeginSession(SESSION sessionData) {
+  /// <summary>
+  /// Begins a new telemetry session.
+  /// </summary>
+  /// <param name="sessionData">The session data to write.</param>
+  /// <exception cref="InvalidOperationException">Thrown if a session is already open.</exception>
+  public void BeginSession(SESSION sessionData)
+  {
     if (_sessionOpen)
       throw new InvalidOperationException("Cannot begin a new session while another session is open");
 
@@ -56,7 +69,13 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream.Flush();
   }
 
-  public void WriteFrame(FRAME frame) {
+  /// <summary>
+  /// Writes a frame of telemetry data to the current session.
+  /// </summary>
+  /// <param name="frame">The frame data to write.</param>
+  /// <exception cref="InvalidOperationException">Thrown if no session is open.</exception>
+  public void WriteFrame(FRAME frame)
+  {
     if (!_sessionOpen)
       throw new InvalidOperationException("Cannot write frames without an open session");
 
@@ -74,7 +93,12 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream.Write(_writeBuffer.AsSpan(0, GetTotalFrameSize()));
   }
 
-  public void EndSession() {
+  /// <summary>
+  /// Ends the current telemetry session.
+  /// </summary>
+  /// <exception cref="InvalidOperationException">Thrown if no session is open.</exception>
+  public void EndSession()
+  {
     if (!_sessionOpen)
       throw new InvalidOperationException("Cannot end session when no session is open");
 
@@ -91,7 +115,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _sessionOpen = false;
   }
 
-  private void EnsureHeader() {
+  private void EnsureHeader()
+  {
     if (_headerWritten) return;
 
     // Write magic number
@@ -117,7 +142,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream.Write(span[..4]);
 
     var currentPosition = 40L;
-    foreach (var (key, value) in _metadata) {
+    foreach (var (key, value) in _metadata)
+    {
       var keyBytes = Encoding.UTF8.GetBytes(key);
       var valueBytes = Encoding.UTF8.GetBytes(value);
 
@@ -127,7 +153,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
 
       currentPosition += 4 + keyBytes.Length;
       var keyPadding = SpanReader.GetPadding((int)currentPosition);
-      if (keyPadding > 0) {
+      if (keyPadding > 0)
+      {
         _stream.Write(new byte[keyPadding]);
         currentPosition += keyPadding;
       }
@@ -138,7 +165,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
 
       currentPosition += 4 + valueBytes.Length;
       var valuePadding = SpanReader.GetPadding((int)currentPosition);
-      if (valuePadding > 0) {
+      if (valuePadding > 0)
+      {
         _stream.Write(new byte[valuePadding]);
         currentPosition += valuePadding;
       }
@@ -148,14 +176,19 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream.Flush();
   }
 
-  public void Dispose() {
-    if (!_sessionOpen) {
+  public void Dispose()
+  {
+    if (!_sessionOpen)
+    {
       return;
     }
 
-    try {
+    try
+    {
       EndSession();
-    } catch {
+    }
+    catch
+    {
       /* Best effort */
     }
   }

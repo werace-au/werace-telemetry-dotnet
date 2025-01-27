@@ -1,6 +1,22 @@
 namespace WeRace.Telemetry;
 
-public class Debugging {
+/// <summary>
+/// Provides utility methods for debugging telemetry data streams.
+/// </summary>
+public class Debugging
+{
+  /// <summary>
+  /// Dumps the structure of a file stream to the console in both hexadecimal and ASCII formats.
+  /// </summary>
+  /// <param name="stream">The stream to be read and dumped. The stream's position will be reset to zero.</param>
+  /// <example>
+  /// <code>
+  /// using (var stream = new FileStream("path/to/file", FileMode.Open))
+  /// {
+  ///     Debugging.DumpFileStructure(stream);
+  /// }
+  /// </code>
+  /// </example>
   public static void DumpFileStructure(Stream stream)
   {
     stream.Position = 0;
