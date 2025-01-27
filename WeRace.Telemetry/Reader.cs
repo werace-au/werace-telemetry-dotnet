@@ -22,6 +22,8 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
   private readonly int _frameSize;
   private readonly int _headerSize;
   private readonly int _totalFrameSize;
+  private readonly int _sessionSize;
+  private readonly int _sessionHeaderSize;
 
   public Header Header { get; }
   public IReadOnlyList<SessionInfo<SESSION>> Sessions { get; }
@@ -33,7 +35,9 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     Sessions = sessions;
     _frameSize = SpanReader.GetAlignedSize<FRAME>();
     _headerSize = SpanReader.GetAlignedSize<FrameHeader>();
+    _sessionSize = SpanReader.GetAlignedSize<SESSION>();
     _totalFrameSize = _frameSize + _headerSize + SpanReader.GetPadding(_frameSize + _headerSize);
+    _sessionHeaderSize = MAGIC_SIZE + _sessionSize + SpanReader.GetPadding(MAGIC_SIZE + _sessionSize);
   }
 
   /// <summary>
@@ -125,11 +129,16 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     var footerData = new byte[FOOTER_SIZE - MAGIC_SIZE];
     var minPos = FIXED_HEADER_SIZE + GetMetadataSize(stream);
     var currentPos = stream.Length;
-    var frameSize = SpanReader.GetAlignedSize<FRAME>();
-    var frameHeaderSize = SpanReader.GetAlignedSize<FrameHeader>();
-    var totalFrameSize = frameSize + frameHeaderSize + SpanReader.GetPadding(frameSize + frameHeaderSize);
-    var sessionHeaderSize = MAGIC_SIZE + SpanReader.GetAlignedSize<SESSION>() +
-                            SpanReader.GetPadding(MAGIC_SIZE + SpanReader.GetAlignedSize<SESSION>());
+    var defaultHeader = new Header
+    {
+      Version = 1,
+      SampleRate = 1,
+      StartTimestamp = 0,
+      Metadata = new Metadata(new Dictionary<string, string>())
+    };
+    var reader = new Reader<SESSION, FRAME>(stream, defaultHeader, sessions);
+    var totalFrameSize = reader._totalFrameSize;
+    var sessionHeaderSize = reader._sessionHeaderSize;
 
     while (currentPos > minPos)
     {
@@ -205,14 +214,31 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
   private static T ReadSessionData<T>(Stream stream, long position) where T : struct
   {
     stream.Position = position + MAGIC_SIZE;
-    var buffer = new byte[SpanReader.GetAlignedSize<T>()];
+    var defaultHeader = new Header
+    {
+      Version = 1,
+      SampleRate = 1,
+      StartTimestamp = 0,
+      Metadata = new Metadata(new Dictionary<string, string>())
+    };
+    var reader = new Reader<SESSION, FRAME>(stream, defaultHeader, new List<SessionInfo<SESSION>>());
+    var buffer = new byte[reader._sessionSize];
     stream.ReadExactly(buffer);
     return SpanReader.ReadStruct<T>(buffer);
   }
 
-  private static long GetDataStart(long sessionStart) =>
-    sessionStart + MAGIC_SIZE + SpanReader.GetAlignedSize<SESSION>() +
-    SpanReader.GetPadding(MAGIC_SIZE + SpanReader.GetAlignedSize<SESSION>());
+  private static long GetDataStart(long sessionStart)
+  {
+    var defaultHeader = new Header
+    {
+      Version = 1,
+      SampleRate = 1,
+      StartTimestamp = 0,
+      Metadata = new Metadata(new Dictionary<string, string>())
+    };
+    var reader = new Reader<SESSION, FRAME>(new MemoryStream(), defaultHeader, new List<SessionInfo<SESSION>>());
+    return sessionStart + reader._sessionHeaderSize;
+  }
 
   /// <summary>
   /// Enumerates frames within a specified session.

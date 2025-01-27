@@ -14,8 +14,8 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
     {
         _generators = [
           new TypeGenerator(),
-
-          // TODO: Add reader and writer generators
+          new ReaderGenerator(),
+          new WriterGenerator()
         ];
     }
 

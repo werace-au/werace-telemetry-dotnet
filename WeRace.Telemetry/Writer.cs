@@ -13,15 +13,14 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
   private readonly Stream _stream;
   private readonly ulong _sampleRate;
   private readonly Dictionary<string, string> _metadata;
+  private readonly int _frameSize;
+  private readonly int _sessionSize;
+  private readonly int _headerSize;
+  private readonly int _totalFrameSize;
   private bool _headerWritten;
   private bool _sessionOpen;
   private ulong _currentTick;
   private readonly byte[] _writeBuffer;
-
-  private static int GetFrameSize() => SpanReader.GetAlignedSize<FRAME>();
-  private static int GetSessionSize() => SpanReader.GetAlignedSize<SESSION>();
-  private static int GetHeaderSize() => SpanReader.GetAlignedSize<FrameHeader>();
-  private static int GetTotalFrameSize() => GetFrameSize() + GetHeaderSize() + SpanReader.GetPadding(GetFrameSize() + GetHeaderSize());
 
   public Writer(Stream stream, ulong sampleRate, IReadOnlyDictionary<string, string>? metadata = null)
   {
@@ -36,7 +35,11 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream = stream;
     _sampleRate = sampleRate;
     _metadata = new Dictionary<string, string>(metadata ?? new Dictionary<string, string>());
-    _writeBuffer = new byte[Math.Max(1024, GetTotalFrameSize())];
+    _frameSize = SpanReader.GetAlignedSize<FRAME>();
+    _sessionSize = SpanReader.GetAlignedSize<SESSION>();
+    _headerSize = SpanReader.GetAlignedSize<FrameHeader>();
+    _totalFrameSize = _frameSize + _headerSize + SpanReader.GetPadding(_frameSize + _headerSize);
+    _writeBuffer = new byte[Math.Max(1024, _totalFrameSize)];
   }
 
   /// <summary>
@@ -55,7 +58,7 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream.Write(Encoding.ASCII.GetBytes(Magic.SessionMagic));
 
     // Write session data with proper alignment
-    var sessionSize = GetSessionSize();
+    var sessionSize = _sessionSize;
     SpanReader.WriteStruct(sessionData, _writeBuffer.AsSpan(0, sessionSize));
     _stream.Write(_writeBuffer.AsSpan(0, sessionSize));
 
@@ -80,8 +83,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
       throw new InvalidOperationException("Cannot write frames without an open session");
 
     var header = new FrameHeader(_currentTick++);
-    var headerSize = GetHeaderSize();
-    var frameSize = GetFrameSize();
+    var headerSize = _headerSize;
+    var frameSize = _frameSize;
 
     // Write header
     SpanReader.WriteStruct(header, _writeBuffer.AsSpan(0, headerSize));
@@ -90,7 +93,7 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     SpanReader.WriteStruct(frame, _writeBuffer.AsSpan(headerSize, frameSize));
 
     // Write full buffer including padding
-    _stream.Write(_writeBuffer.AsSpan(0, GetTotalFrameSize()));
+    _stream.Write(_writeBuffer.AsSpan(0, _totalFrameSize));
   }
 
   /// <summary>
