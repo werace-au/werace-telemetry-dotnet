@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry.Generator.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry", "WeRace.Telemetry\WeRace.Telemetry.csproj", "{3EAF66B4-DDA7-451F-8B82-7416BF230D81}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeRace.Telemetry.Tests", "WeRace.Telemetry.Tests\WeRace.Telemetry.Tests.csproj", "{578A74E3-E47A-4C70-9514-48ADC0D4A476}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3EAF66B4-DDA7-451F-8B82-7416BF230D81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{578A74E3-E47A-4C70-9514-48ADC0D4A476}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{578A74E3-E47A-4C70-9514-48ADC0D4A476}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{578A74E3-E47A-4C70-9514-48ADC0D4A476}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{578A74E3-E47A-4C70-9514-48ADC0D4A476}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

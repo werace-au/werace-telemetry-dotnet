@@ -12,11 +12,11 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
 
     public TelemetrySourceGenerator()
     {
-        _generators = new IGenerator[]
-        {
-            new TypeGenerator(),
-            // TODO: Add reader and writer generators
-        };
+        _generators = [
+          new TypeGenerator(),
+
+          // TODO: Add reader and writer generators
+        ];
     }
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -46,7 +46,7 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
         });
 
         // Create a provider for the compilation
-        IncrementalValueProvider<Compilation> compilationProvider = context.CompilationProvider;
+        var compilationProvider = context.CompilationProvider;
 
         // Combine the YAML files with the compilation
         IncrementalValueProvider<(Compilation Compilation, (AdditionalText File, TelemetryDefinition? Definition, Exception? Error)[] Definitions)> combined =
@@ -88,8 +88,7 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
                 {
                     var diagnostic = Diagnostic.Create(
                         Diagnostics.ParseError,
-                        Location.Create(file.Path, TextSpan.FromBounds(0, 0), new LinePositionSpan()),
-                        new[] { error.Message });
+                        Location.Create(file.Path, TextSpan.FromBounds(0, 0), new()), error.Message);
 
                     spc.ReportDiagnostic(diagnostic);
                     continue;
@@ -114,8 +113,7 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
                 {
                     var diagnostic = Diagnostic.Create(
                         Diagnostics.CodeGenerationError,
-                        Location.Create(file.Path, TextSpan.FromBounds(0, 0), new LinePositionSpan()),
-                        new[] { $"{ex.GetType().Name}: {ex.Message}" });
+                        Location.Create(file.Path, TextSpan.FromBounds(0, 0), new()), $"{ex.GetType().Name}: {ex.Message}");
 
                     spc.ReportDiagnostic(diagnostic);
                 }
@@ -142,8 +140,7 @@ public class TelemetrySourceGenerator : IIncrementalGenerator
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     Diagnostics.CodeGenerationError,
-                    Location.None,
-                    new object[] { ex.Message }));
+                    Location.None, ex.Message));
             }
         }
     }

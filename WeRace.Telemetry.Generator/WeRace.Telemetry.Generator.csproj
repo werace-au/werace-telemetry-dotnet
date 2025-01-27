@@ -39,4 +39,8 @@
       <_Parameter1>WeRace.Telemetry.Generator.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Writer\" />
+  </ItemGroup>
 </Project>

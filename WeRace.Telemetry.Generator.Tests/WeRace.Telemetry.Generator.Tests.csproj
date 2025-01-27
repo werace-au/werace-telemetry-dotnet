@@ -22,6 +22,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\WeRace.Telemetry.Generator\WeRace.Telemetry.Generator.csproj"/>
+        <ProjectReference Include="..\WeRace.Telemetry\WeRace.Telemetry.csproj" />
     </ItemGroup>
 
     <ItemGroup>
