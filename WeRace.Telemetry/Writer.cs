@@ -35,10 +35,10 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _stream = stream;
     _sampleRate = sampleRate;
     _metadata = new Dictionary<string, string>(metadata ?? new Dictionary<string, string>());
-    _frameSize = SpanReader.GetAlignedSize<FRAME>();
-    _sessionSize = SpanReader.GetAlignedSize<SESSION>();
-    _headerSize = SpanReader.GetAlignedSize<FrameHeader>();
-    _totalFrameSize = _frameSize + _headerSize + SpanReader.GetPadding(_frameSize + _headerSize);
+    _frameSize = TelemetrySizeHelper<SESSION, FRAME>.FrameSize;
+    _sessionSize = TelemetrySizeHelper<SESSION, FRAME>.SessionSize;
+    _headerSize = TelemetrySizeHelper<SESSION, FRAME>.HeaderSize;
+    _totalFrameSize = TelemetrySizeHelper<SESSION, FRAME>.TotalFrameSize;
     _writeBuffer = new byte[Math.Max(1024, _totalFrameSize)];
   }
 

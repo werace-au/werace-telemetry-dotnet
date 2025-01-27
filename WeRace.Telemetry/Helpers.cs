@@ -31,3 +31,15 @@ internal static class SizeCalculator
     return headerSize + frameSize + SpanReader.GetPadding(headerSize + frameSize);
   }
 }
+
+/// <summary>
+/// Provides cached size calculations for telemetry structures.
+/// </summary>
+internal static class TelemetrySizeHelper<SESSION, FRAME> where SESSION : struct where FRAME : struct
+{
+  public static readonly int FrameSize = SpanReader.GetAlignedSize<FRAME>();
+  public static readonly int SessionSize = SpanReader.GetAlignedSize<SESSION>();
+  public static readonly int HeaderSize = SpanReader.GetAlignedSize<FrameHeader>();
+  public static readonly int TotalFrameSize = FrameSize + HeaderSize + SpanReader.GetPadding(FrameSize + HeaderSize);
+  public static readonly int SessionHeaderSize = Magic.MAGIC_SIZE + SessionSize + SpanReader.GetPadding(Magic.MAGIC_SIZE + SessionSize);
+}

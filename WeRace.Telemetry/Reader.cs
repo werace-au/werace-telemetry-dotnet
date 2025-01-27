@@ -12,7 +12,6 @@ namespace WeRace.Telemetry;
 public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : struct
 {
   private const int FIXED_HEADER_SIZE = 40;
-  private const int MAGIC_SIZE = 8;
   private const int FOOTER_SIZE = 24; // Magic(8) + FrameCount(8) + LastTick(8)
   private const int METADATA_COUNT_OFFSET = 32;
   private const int METADATA_START_OFFSET = 40;
@@ -33,11 +32,11 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     _stream = stream;
     Header = header;
     Sessions = sessions;
-    _frameSize = SpanReader.GetAlignedSize<FRAME>();
-    _headerSize = SpanReader.GetAlignedSize<FrameHeader>();
-    _sessionSize = SpanReader.GetAlignedSize<SESSION>();
-    _totalFrameSize = _frameSize + _headerSize + SpanReader.GetPadding(_frameSize + _headerSize);
-    _sessionHeaderSize = MAGIC_SIZE + _sessionSize + SpanReader.GetPadding(MAGIC_SIZE + _sessionSize);
+    _frameSize = TelemetrySizeHelper<SESSION, FRAME>.FrameSize;
+    _headerSize = TelemetrySizeHelper<SESSION, FRAME>.HeaderSize;
+    _sessionSize = TelemetrySizeHelper<SESSION, FRAME>.SessionSize;
+    _totalFrameSize = TelemetrySizeHelper<SESSION, FRAME>.TotalFrameSize;
+    _sessionHeaderSize = TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
   }
 
   /// <summary>
@@ -63,7 +62,7 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     Span<byte> headerBuffer = stackalloc byte[FIXED_HEADER_SIZE];
     stream.ReadExactly(headerBuffer);
 
-    if (!SpanReader.TryReadMagic(headerBuffer[..MAGIC_SIZE], Magic.FileMagic))
+    if (!SpanReader.TryReadMagic(headerBuffer[..Magic.MAGIC_SIZE], Magic.FileMagic))
       throw new InvalidDataException("Invalid WRTF file magic number");
 
     var version = BinaryPrimitives.ReadUInt64LittleEndian(headerBuffer.Slice(8, 8));
@@ -85,36 +84,57 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
   {
     var entries = new Dictionary<string, string>((int)count);
     stream.Position = offset;
-    var buffer = new byte[1024];
+
+    // Pre-calculate total metadata size to allocate buffer once
+    stream.Position = offset;
+    var totalSize = 0;
+    var positions = new (int keyStart, int keyLength, int valueStart, int valueLength)[count];
+    var currentPos = 0;
     Span<byte> lengthBuffer = stackalloc byte[LENGTH_FIELD_SIZE];
 
     for (var i = 0; i < count; i++)
     {
       stream.ReadExactly(lengthBuffer);
       var keyLength = BinaryPrimitives.ReadInt32LittleEndian(lengthBuffer);
+      var keyStart = currentPos;
+      currentPos += keyLength;
 
-      if (keyLength > buffer.Length)
-        Array.Resize(ref buffer, keyLength);
+      var padding = SpanReader.GetPadding(keyLength + LENGTH_FIELD_SIZE);
+      stream.Seek(keyLength + padding, SeekOrigin.Current);
+
+      stream.ReadExactly(lengthBuffer);
+      var valueLength = BinaryPrimitives.ReadInt32LittleEndian(lengthBuffer);
+      var valueStart = currentPos;
+      currentPos += valueLength;
+
+      padding = SpanReader.GetPadding(valueLength + LENGTH_FIELD_SIZE);
+      stream.Seek(valueLength + padding, SeekOrigin.Current);
+
+      positions[i] = (keyStart, keyLength, valueStart, valueLength);
+      totalSize = Math.Max(totalSize, Math.Max(keyLength, valueLength));
+    }
+
+    // Now read the actual data using a single buffer
+    var buffer = new byte[totalSize];
+    stream.Position = offset;
+
+    for (var i = 0; i < count; i++)
+    {
+      stream.ReadExactly(lengthBuffer); // Skip length, we already know it
+      var (keyStart, keyLength, valueStart, valueLength) = positions[i];
 
       stream.ReadExactly(buffer.AsSpan(0, keyLength));
       var key = Encoding.UTF8.GetString(buffer, 0, keyLength);
 
       var padding = SpanReader.GetPadding(keyLength + LENGTH_FIELD_SIZE);
-      if (padding > 0)
-        stream.Seek(padding, SeekOrigin.Current);
+      stream.Seek(padding, SeekOrigin.Current);
 
-      stream.ReadExactly(lengthBuffer);
-      var valueLength = BinaryPrimitives.ReadInt32LittleEndian(lengthBuffer);
-
-      if (valueLength > buffer.Length)
-        Array.Resize(ref buffer, valueLength);
-
+      stream.ReadExactly(lengthBuffer); // Skip length
       stream.ReadExactly(buffer.AsSpan(0, valueLength));
       var value = Encoding.UTF8.GetString(buffer, 0, valueLength);
 
       padding = SpanReader.GetPadding(valueLength + LENGTH_FIELD_SIZE);
-      if (padding > 0)
-        stream.Seek(padding, SeekOrigin.Current);
+      stream.Seek(padding, SeekOrigin.Current);
 
       entries.Add(key, value);
     }
@@ -125,20 +145,12 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
   private static List<SessionInfo<SESSION>> ReadSessionsFromEnd(Stream stream)
   {
     var sessions = new List<SessionInfo<SESSION>>();
-    var magic = new byte[MAGIC_SIZE];
-    var footerData = new byte[FOOTER_SIZE - MAGIC_SIZE];
+    var magic = new byte[Magic.MAGIC_SIZE];
+    var footerData = new byte[FOOTER_SIZE - Magic.MAGIC_SIZE];
     var minPos = FIXED_HEADER_SIZE + GetMetadataSize(stream);
     var currentPos = stream.Length;
-    var defaultHeader = new Header
-    {
-      Version = 1,
-      SampleRate = 1,
-      StartTimestamp = 0,
-      Metadata = new Metadata(new Dictionary<string, string>())
-    };
-    var reader = new Reader<SESSION, FRAME>(stream, defaultHeader, sessions);
-    var totalFrameSize = reader._totalFrameSize;
-    var sessionHeaderSize = reader._sessionHeaderSize;
+    var totalFrameSize = TelemetrySizeHelper<SESSION, FRAME>.TotalFrameSize;
+    var sessionHeaderSize = TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
 
     while (currentPos > minPos)
     {
@@ -213,31 +225,15 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
 
   private static T ReadSessionData<T>(Stream stream, long position) where T : struct
   {
-    stream.Position = position + MAGIC_SIZE;
-    var defaultHeader = new Header
-    {
-      Version = 1,
-      SampleRate = 1,
-      StartTimestamp = 0,
-      Metadata = new Metadata(new Dictionary<string, string>())
-    };
-    var reader = new Reader<SESSION, FRAME>(stream, defaultHeader, new List<SessionInfo<SESSION>>());
-    var buffer = new byte[reader._sessionSize];
+    stream.Position = position + Magic.MAGIC_SIZE;
+    var buffer = new byte[TelemetrySizeHelper<SESSION, FRAME>.SessionSize];
     stream.ReadExactly(buffer);
     return SpanReader.ReadStruct<T>(buffer);
   }
 
   private static long GetDataStart(long sessionStart)
   {
-    var defaultHeader = new Header
-    {
-      Version = 1,
-      SampleRate = 1,
-      StartTimestamp = 0,
-      Metadata = new Metadata(new Dictionary<string, string>())
-    };
-    var reader = new Reader<SESSION, FRAME>(new MemoryStream(), defaultHeader, new List<SessionInfo<SESSION>>());
-    return sessionStart + reader._sessionHeaderSize;
+    return sessionStart + TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
   }
 
   /// <summary>
