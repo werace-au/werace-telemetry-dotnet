@@ -3,25 +3,32 @@ namespace WeRace.Telemetry.Generator.Definition;
 public sealed class SessionType : IWithValidation
 {
   [RequiredMember] public string Description { get; set; } = "";
-  [RequiredMember] public Field[] Fields { get; set; } = [];
+  [RequiredMember] public SessionHeader Header { get; set; } = new();
+  public SessionFooter? Footer { get; set; }
 
   public void Validate(ValidationContext context)
   {
     if (Description.Trim() is "")
       throw new ValidationException(nameof(Description), "Description cannot be empty");
 
-    if (Fields.Length == 0)
-      throw new ValidationException(nameof(Fields), "Session must have at least one field");
+    try
+    {
+      Header.Validate(context);
+    }
+    catch (ValidationException ex)
+    {
+      throw new ValidationException("Header", ex.Message, ex);
+    }
 
-    for (var i = 0; i < Fields.Length; i++)
+    if (Footer is not null)
     {
       try
       {
-        Fields[i].Validate(context);
+        Footer.Validate(context);
       }
       catch (ValidationException ex)
       {
-        throw new ValidationException($"Fields[{i}]", ex.Message, ex);
+        throw new ValidationException("Footer", ex.Message, ex);
       }
     }
   }

@@ -5,19 +5,22 @@ using Xunit;
 
 namespace WeRace.Telemetry.Generator.Tests;
 
-public class DefinitionParserTests {
+public class DefinitionParserTests
+{
   private const string EmptyMap = "{}";
   private const string FixturesPath = "Fixtures";
 
   private readonly DefinitionParser _parser = new();
 
-  private static string LoadFixture(string name) {
+  private static string LoadFixture(string name)
+  {
     var path = Path.Combine(FixturesPath, $"{name}.yaml");
     return File.ReadAllText(path);
   }
 
   [Fact]
-  public void Parse_ValidMinimalDefinition_ReturnsDefinition() {
+  public void Parse_ValidMinimalDefinition_ReturnsDefinition()
+  {
     // Arrange
     var yaml = LoadFixture("valid-minimal");
 
@@ -40,7 +43,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ComplexTypeDefinition_ReturnsDefinition() {
+  public void Parse_ComplexTypeDefinition_ReturnsDefinition()
+  {
     // Arrange
     var yaml = LoadFixture("valid-complex-type");
 
@@ -57,7 +61,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ExampleDefinition_ReturnsDefinition() {
+  public void Parse_ExampleDefinition_ReturnsDefinition()
+  {
     // Arrange
     var yaml = LoadFixture("example");
 
@@ -71,7 +76,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ArrayTypes_ReturnsDefinition() {
+  public void Parse_ArrayTypes_ReturnsDefinition()
+  {
     // Arrange
     var yaml = LoadFixture("valid-array-types");
 
@@ -93,7 +99,8 @@ public class DefinitionParserTests {
   [Theory]
   [InlineData("2.0")] // Invalid version
   [InlineData("0.9")] // Invalid version
-  public void Parse_UnsupportedVersion_ThrowsException(string version) {
+  public void Parse_UnsupportedVersion_ThrowsException(string version)
+  {
     // Arrange
     var yaml = $"""
                 version: "{version}"
@@ -117,7 +124,8 @@ public class DefinitionParserTests {
 
   [Theory]
   [InlineData("")] // Empty title
-  public void Parse_InvalidMetadata_ThrowsException(string? title) {
+  public void Parse_InvalidMetadata_ThrowsException(string? title)
+  {
     // Arrange
     var yaml = $"""
                 version: "1.0"
@@ -140,7 +148,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_CircularTypeReference_ThrowsException() {
+  public void Parse_CircularTypeReference_ThrowsException()
+  {
     // Arrange
     var yaml = LoadFixture("circular-types");
 
@@ -151,7 +160,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_InvalidYaml_ThrowsException() {
+  public void Parse_InvalidYaml_ThrowsException()
+  {
     // Arrange
     var yaml = "invalid: yaml: content: [}";
 
@@ -164,7 +174,8 @@ public class DefinitionParserTests {
   [InlineData("invalid_type")]
   [InlineData("string")]
   [InlineData("datetime")]
-  public void Parse_InvalidPrimitiveType_ThrowsException(string type) {
+  public void Parse_InvalidPrimitiveType_ThrowsException(string type)
+  {
     // Arrange
     var yaml = $"""
                 version: "1.0"
@@ -174,11 +185,13 @@ public class DefinitionParserTests {
                 types: {EmptyMap}
                 session:
                   description: "Test session"
-                  fields:
-                    - name: type
-                      type: uint32
-                      dimensions: 0
-                      description: "Session type"
+                  header:
+                    description: "Session header"
+                    fields:
+                      - name: type
+                        type: uint32
+                        dimensions: 0
+                        description: "Session type"
                 channels:
                   - name: test
                     type: {type}
@@ -194,7 +207,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ValidEnumDefinition_ReturnsDefinition() {
+  public void Parse_ValidEnumDefinition_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -203,11 +217,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -250,7 +266,8 @@ public class DefinitionParserTests {
 
 
   [Fact]
-  public void Parse_EnumWithDuplicateNames_ThrowsException() {
+  public void Parse_EnumWithDuplicateNames_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -259,11 +276,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -285,7 +304,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumWithDuplicateValues_ThrowsException() {
+  public void Parse_EnumWithDuplicateValues_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -294,11 +314,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -320,7 +342,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumWithNoValues_ThrowsException() {
+  public void Parse_EnumWithNoValues_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -329,11 +352,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -349,7 +374,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumWithEmptyValueName_ThrowsException() {
+  public void Parse_EnumWithEmptyValueName_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -358,11 +384,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -381,7 +409,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumWithEmptyValueDescription_ThrowsException() {
+  public void Parse_EnumWithEmptyValueDescription_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -390,11 +419,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -413,7 +444,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumWithFields_ThrowsException() {
+  public void Parse_EnumWithFields_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -422,11 +454,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -449,7 +483,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumValueNameWithOnlyWhitespace_ThrowsException() {
+  public void Parse_EnumValueNameWithOnlyWhitespace_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -458,11 +493,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -481,7 +518,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EnumInStructField_ReturnsDefinition() {
+  public void Parse_EnumInStructField_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -490,11 +528,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -536,7 +576,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ArrayOfEnums_ReturnsDefinition() {
+  public void Parse_ArrayOfEnums_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -545,11 +586,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  status_code:
                    type: enum
@@ -579,7 +622,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_MultipleEnumsWithSharedValues_ReturnsDefinition() {
+  public void Parse_MultipleEnumsWithSharedValues_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -588,11 +632,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -624,7 +670,8 @@ public class DefinitionParserTests {
   [InlineData("")]
   [InlineData(" ")]
   [InlineData("\t")]
-  public void Parse_EnumValueDescriptionWithWhitespace_ThrowsException(string description) {
+  public void Parse_EnumValueDescriptionWithWhitespace_ThrowsException(string description)
+  {
     // Arrange
     var yaml = $"""
                 version: "1.0"
@@ -649,7 +696,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_UndefinedEnumTypeInChannel_ThrowsException() {
+  public void Parse_UndefinedEnumTypeInChannel_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -658,11 +706,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types: {}
                channels:
                  - name: status
@@ -679,7 +729,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ValidEnumWithWhitespaceInNamesAndDescriptions_ReturnsDefinition() {
+  public void Parse_ValidEnumWithWhitespaceInNamesAndDescriptions_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -688,11 +739,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  log_level:
                    type: enum
@@ -717,7 +770,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_AllPrimitiveTypes_ReturnsDefinition() {
+  public void Parse_AllPrimitiveTypes_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -726,11 +780,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  primitives:
                    type: struct
@@ -786,7 +842,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_NestedStructs_ReturnsDefinition() {
+  public void Parse_NestedStructs_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -795,11 +852,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  vector3:
                    type: struct
@@ -845,7 +904,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ArraysOfStructs_ReturnsDefinition() {
+  public void Parse_ArraysOfStructs_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -854,11 +914,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  point:
                    type: struct
@@ -901,7 +963,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_StructFieldWithInvalidType_ThrowsException() {
+  public void Parse_StructFieldWithInvalidType_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -910,11 +973,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  invalid_struct:
                    type: struct
@@ -933,7 +998,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_StructWithNegativeDimensions_ThrowsException() {
+  public void Parse_StructWithNegativeDimensions_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -942,11 +1008,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  point:
                    type: struct
@@ -966,7 +1034,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_EmptyStruct_ThrowsException() {
+  public void Parse_EmptyStruct_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -975,11 +1044,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  empty_struct:
                    type: struct
@@ -995,7 +1066,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ComplexTypeWithUnits_ReturnsDefinition() {
+  public void Parse_ComplexTypeWithUnits_ReturnsDefinition()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -1004,11 +1076,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  sensor_data:
                    type: struct
@@ -1048,7 +1122,8 @@ public class DefinitionParserTests {
   }
 
   [Fact]
-  public void Parse_ComplexTypeWithEmptyFieldName_ThrowsException() {
+  public void Parse_ComplexTypeWithEmptyFieldName_ThrowsException()
+  {
     // Arrange
     var yaml = """
                version: "1.0"
@@ -1057,11 +1132,13 @@ public class DefinitionParserTests {
                  description: "Test"
                session:
                  description: "Test session"
-                 fields:
-                   - name: type
-                     type: uint32
-                     dimensions: 0
-                     description: "Session type"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
                types:
                  invalid_struct:
                    type: struct
@@ -1077,5 +1154,275 @@ public class DefinitionParserTests {
     var action = () => _parser.Parse(yaml);
     action.Should().Throw<ParseException>()
       .WithMessage("*Name cannot be empty*");
+  }
+
+  [Fact]
+  public void Parse_ValidSessionWithHeaderAndFooter_ReturnsDefinition()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+                     - name: driver_id
+                       type: uint32
+                       dimensions: 0
+                       description: "Driver ID"
+                 footer:
+                   description: "Session footer"
+                   fields:
+                     - name: total_laps
+                       type: uint32
+                       dimensions: 0
+                       description: "Total laps completed"
+                     - name: best_lap_time
+                       type: uint32
+                       dimensions: 0
+                       description: "Best lap time"
+               types: {}
+               channels: []
+               """;
+
+    // Act
+    var definition = _parser.Parse(yaml);
+
+    // Assert
+    definition.Session.Description.Should().Be("Test session");
+
+    // Verify header
+    definition.Session.Header.Description.Should().Be("Session header");
+    definition.Session.Header.Fields.Should().HaveCount(2);
+    definition.Session.Header.Fields[0].Name.Should().Be("type");
+    definition.Session.Header.Fields[1].Name.Should().Be("driver_id");
+
+    // Verify footer
+    definition.Session.Footer.Should().NotBeNull();
+    definition.Session.Footer!.Description.Should().Be("Session footer");
+    definition.Session.Footer.Fields.Should().HaveCount(2);
+    definition.Session.Footer.Fields[0].Name.Should().Be("total_laps");
+    definition.Session.Footer.Fields[1].Name.Should().Be("best_lap_time");
+  }
+
+  [Fact]
+  public void Parse_SessionWithoutFooter_ReturnsDefinition()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+               types: {}
+               channels: []
+               """;
+
+    // Act
+    var definition = _parser.Parse(yaml);
+
+    // Assert
+    definition.Session.Description.Should().Be("Test session");
+    definition.Session.Header.Description.Should().Be("Session header");
+    definition.Session.Header.Fields.Should().HaveCount(1);
+    definition.Session.Footer.Should().BeNull();
+  }
+
+  [Fact]
+  public void Parse_SessionWithEmptyHeaderFields_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields: []
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Session header must have at least one field*");
+  }
+
+  [Fact]
+  public void Parse_SessionWithEmptyFooterFields_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+                 footer:
+                   description: "Session footer"
+                   fields: []
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Session footer must have at least one field*");
+  }
+
+  [Fact]
+  public void Parse_SessionWithEmptyHeaderDescription_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: ""
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Header description cannot be empty*");
+  }
+
+  [Fact]
+  public void Parse_SessionWithEmptyFooterDescription_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+                 footer:
+                   description: ""
+                   fields:
+                     - name: total_laps
+                       type: uint32
+                       dimensions: 0
+                       description: "Total laps"
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Footer description cannot be empty*");
+  }
+
+  [Fact]
+  public void Parse_SessionWithInvalidHeaderFieldType_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: invalid_type
+                       dimensions: 0
+                       description: "Session type"
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Invalid type*");
+  }
+
+  [Fact]
+  public void Parse_SessionWithInvalidFooterFieldType_ThrowsException()
+  {
+    // Arrange
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               session:
+                 description: "Test session"
+                 header:
+                   description: "Session header"
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+                 footer:
+                   description: "Session footer"
+                   fields:
+                     - name: total_laps
+                       type: invalid_type
+                       dimensions: 0
+                       description: "Total laps"
+               types: {}
+               channels: []
+               """;
+
+    // Act & Assert
+    var action = () => _parser.Parse(yaml);
+    action.Should().Throw<ParseException>()
+      .WithMessage("*Invalid type*");
   }
 }

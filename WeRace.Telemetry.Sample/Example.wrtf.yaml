@@ -5,12 +5,56 @@ metadata:
 
 session:
   description: "Race session information"
-  fields:
-    - name: type
-      type: session_type
-      dimensions: 0
-      description: The type of Session
-      tags: ["metadata"]
+  header:
+    description: "Session initialization data"
+    fields:
+      - name: type
+        type: session_type
+        dimensions: 0
+        description: The type of Session
+        tags: ["metadata"]
+      - name: driver_id
+        type: uint32
+        dimensions: 0
+        description: "Driver identifier"
+        tags: ["metadata"]
+      - name: track_config
+        type: uint32
+        dimensions: 0
+        description: "Track configuration identifier"
+        tags: ["metadata"]
+      - name: ambient_temp
+        type: float32
+        dimensions: 0
+        description: "Ambient temperature at session start"
+        unit: "celsius"
+        tags: ["weather"]
+  footer:
+    description: "Session summary information"
+    fields:
+      - name: total_laps
+        type: uint32
+        dimensions: 0
+        description: "Total laps completed"
+        tags: ["summary"]
+      - name: best_lap_time
+        type: uint32
+        dimensions: 0
+        description: "Best lap time achieved"
+        unit: "ms"
+        tags: ["summary"]
+      - name: total_distance
+        type: float32
+        dimensions: 0
+        description: "Total distance covered"
+        unit: "meters"
+        tags: ["summary"]
+      - name: fuel_used
+        type: float32
+        dimensions: 0
+        description: "Total fuel consumed"
+        unit: "liters"
+        tags: ["summary"]
 
 types:
   log_level:

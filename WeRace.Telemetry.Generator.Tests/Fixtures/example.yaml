@@ -66,38 +66,40 @@ types:
 
 session:
   description: "Race session information"
-  fields:
-    - name: type
-      type: uint32
-      dimensions: 0
-      description: "Session type (0=practice, 1=qualifying, 2=race)"
-      tags: ["metadata"]
+  header:
+    description: "Session header data"
+    fields:
+      - name: type
+        type: uint32
+        dimensions: 0
+        description: "Session type (0=practice, 1=qualifying, 2=race)"
+        tags: ["metadata"]
 
-    - name: driver_id
-      type: uint32
-      dimensions: 0
-      description: "Driver identifier"
-      tags: ["metadata"]
+      - name: driver_id
+        type: uint32
+        dimensions: 0
+        description: "Driver identifier"
+        tags: ["metadata"]
 
-    - name: track_config
-      type: uint32
-      dimensions: 0
-      description: "Track configuration identifier"
-      tags: ["metadata"]
+      - name: track_config
+        type: uint32
+        dimensions: 0
+        description: "Track configuration identifier"
+        tags: ["metadata"]
 
-    - name: ambient_temp
-      type: float32
-      dimensions: 0
-      description: "Ambient temperature at session start"
-      unit: "celsius"
-      tags: ["weather"]
+      - name: ambient_temp
+        type: float32
+        dimensions: 0
+        description: "Ambient temperature at session start"
+        unit: "celsius"
+        tags: ["weather"]
 
-    - name: track_temp
-      type: float32
-      dimensions: 0
-      description: "Track temperature at session start"
-      unit: "celsius"
-      tags: ["weather"]
+      - name: track_temp
+        type: float32
+        dimensions: 0
+        description: "Track temperature at session start"
+        unit: "celsius"
+        tags: ["weather"]
 
 channels:
   - name: timestamp

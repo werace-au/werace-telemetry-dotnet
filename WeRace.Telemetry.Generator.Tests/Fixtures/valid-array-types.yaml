@@ -14,15 +14,17 @@ types:
         unit: "celsius"
 session:
   description: "Test session information"
-  fields:
-    - name: type
-      type: uint32
-      dimensions: 0
-      description: "Session type identifier"
-    - name: name
-      type: uint32
-      dimensions: 0
-      description: "Session name"
+  header:
+    description: "Session header information"
+    fields:
+      - name: type
+        type: uint32
+        dimensions: 0
+        description: "Session type identifier"
+      - name: name
+        type: uint32
+        dimensions: 0
+        description: "Session name"
 channels:
   - name: sensors
     type: sensor_readings

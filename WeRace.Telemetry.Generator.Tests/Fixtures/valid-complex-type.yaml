@@ -21,11 +21,13 @@ types:
         description: "Z component"
 session:
   description: "Basic session information"
-  fields:
-    - name: type
-      type: uint32
-      dimensions: 0
-      description: "Session type identifier"
+  header:
+    description: "Session header information"
+    fields:
+      - name: type
+        type: uint32
+        dimensions: 0
+        description: "Session type identifier"
 channels:
   - name: position
     type: vector3

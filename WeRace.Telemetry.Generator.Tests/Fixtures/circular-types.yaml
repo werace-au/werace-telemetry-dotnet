@@ -21,11 +21,13 @@ types:
         description: "Field A"
 session:
   description: "Test session"
-  fields:
-    - name: type
-      type: uint32
-      dimensions: 0
-      description: "Session type"
+  header:
+    description: "Session header information"
+    fields:
+      - name: type
+        type: uint32
+        dimensions: 0
+        description: "Session type"
 channels:
   - name: test
     type: type_a
