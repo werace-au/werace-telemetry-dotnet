@@ -17,9 +17,11 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
   private readonly int _sessionSize;
   private readonly int _headerSize;
   private readonly int _totalFrameSize;
+  private readonly List<SessionEntry> _sessions;
   private bool _headerWritten;
   private bool _sessionOpen;
   private ulong _currentTick;
+  private long _currentSessionStart;
   private readonly byte[] _writeBuffer;
 
   public Writer(Stream stream, ulong sampleRate, IReadOnlyDictionary<string, string>? metadata = null)
@@ -39,6 +41,7 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     _sessionSize = TelemetrySizeHelper<SESSION, FRAME>.SessionSize;
     _headerSize = TelemetrySizeHelper<SESSION, FRAME>.HeaderSize;
     _totalFrameSize = TelemetrySizeHelper<SESSION, FRAME>.TotalFrameSize;
+    _sessions = new List<SessionEntry>();
     _writeBuffer = new byte[Math.Max(1024, _totalFrameSize)];
   }
 
@@ -53,6 +56,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
       throw new InvalidOperationException("Cannot begin a new session while another session is open");
 
     EnsureHeader();
+
+    _currentSessionStart = _stream.Position;
 
     // Write session header magic
     _stream.Write(Encoding.ASCII.GetBytes(Magic.SessionMagic));
@@ -105,6 +110,8 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     if (!_sessionOpen)
       throw new InvalidOperationException("Cannot end session when no session is open");
 
+    var footerPosition = _stream.Position;
+
     // Write footer magic
     _stream.Write(Encoding.ASCII.GetBytes(Magic.SessionFooterMagic));
 
@@ -114,8 +121,60 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
     BinaryPrimitives.WriteUInt64LittleEndian(span[8..], _currentTick > 0 ? _currentTick - 1 : 0);
     _stream.Write(span);
 
-    // structure is a bit aligned no need to and padding to maintain 8-byte alignment
+    // Record session information for document footer
+    _sessions.Add(new SessionEntry
+    {
+      SessionOffset = _currentSessionStart,
+      FooterOffset = footerPosition,
+      FrameCount = _currentTick
+    });
+
     _sessionOpen = false;
+    _stream.Flush();
+  }
+
+  public void Dispose()
+  {
+    if (_sessionOpen)
+    {
+      try
+      {
+        EndSession();
+      }
+      catch
+      {
+        /* Best effort */
+      }
+    }
+
+    WriteDocumentFooter();
+  }
+
+  private void WriteDocumentFooter()
+  {
+    if (_sessions.Count == 0) return;
+
+    // Write document footer start magic
+    _stream.Write(Encoding.ASCII.GetBytes(Magic.DocumentFooterStartMagic));
+
+    // Write session entries
+    foreach (var session in _sessions)
+    {
+      var span = _writeBuffer.AsSpan(0, 24);
+      BinaryPrimitives.WriteInt64LittleEndian(span[..8], session.SessionOffset);
+      BinaryPrimitives.WriteInt64LittleEndian(span[8..16], session.FooterOffset);
+      BinaryPrimitives.WriteUInt64LittleEndian(span[16..], session.FrameCount);
+      _stream.Write(span);
+    }
+
+    // Write number of sessions
+    var sessionCountSpan = _writeBuffer.AsSpan(0, 8);
+    BinaryPrimitives.WriteUInt64LittleEndian(sessionCountSpan, (ulong)_sessions.Count);
+    _stream.Write(sessionCountSpan);
+
+    // Write document footer end magic
+    _stream.Write(Encoding.ASCII.GetBytes(Magic.DocumentFooterEndMagic));
+    _stream.Flush();
   }
 
   private void EnsureHeader()
@@ -177,22 +236,5 @@ public sealed class Writer<SESSION, FRAME> : IDisposable where SESSION : struct 
 
     _headerWritten = true;
     _stream.Flush();
-  }
-
-  public void Dispose()
-  {
-    if (!_sessionOpen)
-    {
-      return;
-    }
-
-    try
-    {
-      EndSession();
-    }
-    catch
-    {
-      /* Best effort */
-    }
   }
 }

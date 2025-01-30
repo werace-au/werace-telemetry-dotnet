@@ -16,6 +16,7 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
   private const int METADATA_COUNT_OFFSET = 32;
   private const int METADATA_START_OFFSET = 40;
   private const int LENGTH_FIELD_SIZE = 4;
+  private const int SESSION_ENTRY_SIZE = 24;
 
   private readonly Stream _stream;
   private readonly int _frameSize;
@@ -52,7 +53,7 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
       throw new ArgumentException("Stream must be readable and seekable", nameof(stream));
 
     var header = ReadHeader(stream);
-    var sessions = ReadSessionsFromEnd(stream);
+    var sessions = TryReadDocumentFooter(stream) ?? ReadSessionsFromStart(stream);
 
     return new Reader<SESSION, FRAME>(stream, header, sessions);
   }
@@ -142,55 +143,126 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     return entries.ToFrozenDictionary();
   }
 
-  private static List<SessionInfo<SESSION>> ReadSessionsFromEnd(Stream stream)
+  private static List<SessionInfo<SESSION>>? TryReadDocumentFooter(Stream stream)
+  {
+    const int minFooterSize = Magic.MAGIC_SIZE * 2 + sizeof(ulong); // Start magic + End magic + Session count
+    if (stream.Length < minFooterSize) return null;
+
+    // Try to read document footer end marker
+    stream.Position = stream.Length - Magic.MAGIC_SIZE;
+    Span<byte> magic = stackalloc byte[Magic.MAGIC_SIZE];
+    stream.ReadExactly(magic);
+    if (!SpanReader.TryReadMagic(magic, Magic.DocumentFooterEndMagic)) return null;
+
+    // Read number of sessions
+    stream.Position = stream.Length - Magic.MAGIC_SIZE - sizeof(ulong);
+    Span<byte> countBuffer = stackalloc byte[sizeof(ulong)];
+    stream.ReadExactly(countBuffer);
+    var sessionCount = BinaryPrimitives.ReadUInt64LittleEndian(countBuffer);
+
+    // Verify document footer start marker
+    var startMarkerPos = stream.Length - Magic.MAGIC_SIZE - sizeof(ulong) - (long)(sessionCount * (ulong)SESSION_ENTRY_SIZE) - Magic.MAGIC_SIZE;
+    if (startMarkerPos < FIXED_HEADER_SIZE) return null;
+
+    stream.Position = startMarkerPos;
+    stream.ReadExactly(magic);
+    if (!SpanReader.TryReadMagic(magic, Magic.DocumentFooterStartMagic)) return null;
+
+    // Read session entries
+    var sessions = new List<SessionInfo<SESSION>>((int)Math.Min(sessionCount, int.MaxValue));
+    var buffer = new byte[SESSION_ENTRY_SIZE];
+
+    for (var i = 0UL; i < sessionCount; i++)
+    {
+      stream.ReadExactly(buffer);
+      var sessionOffset = BinaryPrimitives.ReadInt64LittleEndian(buffer.AsSpan(0, 8));
+      var footerOffset = BinaryPrimitives.ReadInt64LittleEndian(buffer.AsSpan(8, 8));
+      var frameCount = BinaryPrimitives.ReadUInt64LittleEndian(buffer.AsSpan(16, 8));
+
+      // Verify session header
+      stream.Position = sessionOffset;
+      stream.ReadExactly(magic);
+      if (!SpanReader.TryReadMagic(magic, Magic.SessionMagic)) continue;
+
+      var session = ReadSessionData<SESSION>(stream, sessionOffset);
+      var dataStart = sessionOffset + TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
+
+      sessions.Add(new SessionInfo<SESSION>
+      {
+        Data = session,
+        FrameCount = frameCount,
+        LastFrameTick = frameCount > 0 ? frameCount - 1 : 0,
+        StartOffset = sessionOffset,
+        DataOffset = dataStart
+      });
+    }
+
+    return sessions;
+  }
+
+  private static List<SessionInfo<SESSION>> ReadSessionsFromStart(Stream stream)
   {
     var sessions = new List<SessionInfo<SESSION>>();
     var magic = new byte[Magic.MAGIC_SIZE];
-    var footerData = new byte[FOOTER_SIZE - Magic.MAGIC_SIZE];
     var minPos = FIXED_HEADER_SIZE + GetMetadataSize(stream);
-    var currentPos = stream.Length;
+    var currentPos = minPos;
     var totalFrameSize = TelemetrySizeHelper<SESSION, FRAME>.TotalFrameSize;
     var sessionHeaderSize = TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
 
-    while (currentPos > minPos)
+    while (currentPos < stream.Length)
     {
-      if (currentPos < FOOTER_SIZE + minPos) break;
+      stream.Position = currentPos;
+      if (stream.Read(magic) != Magic.MAGIC_SIZE) break;
 
-      stream.Position = currentPos - FOOTER_SIZE;
-      stream.ReadExactly(magic);
-
-      if (SpanReader.TryReadMagic(magic, Magic.SessionFooterMagic))
+      if (SpanReader.TryReadMagic(magic, Magic.SessionMagic))
       {
-        stream.ReadExactly(footerData);
-        var frameCount = BinaryPrimitives.ReadUInt64LittleEndian(footerData.AsSpan(0, 8));
-        var lastFrameTick = BinaryPrimitives.ReadUInt64LittleEndian(footerData.AsSpan(8, 8));
+        var session = ReadSessionData<SESSION>(stream, currentPos);
+        var dataStart = currentPos + sessionHeaderSize;
+        var frameCount = 0UL;
+        var lastFrameTick = 0UL;
 
-        // Calculate session start based on frame count and sizes
-        var dataSize = (long)frameCount * totalFrameSize;
-        var sessionStart = currentPos - FOOTER_SIZE - dataSize - sessionHeaderSize;
-
-        if (sessionStart >= minPos)
+        // Scan forward to find next session or footer
+        var nextPos = dataStart;
+        while (nextPos + Magic.MAGIC_SIZE <= stream.Length)
         {
-          // Verify session header
-          stream.Position = sessionStart;
-          stream.ReadExactly(magic);
-          if (SpanReader.TryReadMagic(magic, Magic.SessionMagic))
+          stream.Position = nextPos;
+          if (stream.Read(magic) != Magic.MAGIC_SIZE) break;
+
+          if (SpanReader.TryReadMagic(magic, Magic.SessionMagic) ||
+              SpanReader.TryReadMagic(magic, Magic.DocumentFooterStartMagic))
           {
-            var session = ReadSessionData<SESSION>(stream, sessionStart);
-            var dataStart = sessionStart + sessionHeaderSize;
-
-            sessions.Insert(0, new SessionInfo<SESSION>
-            {
-              Data = session,
-              FrameCount = frameCount,
-              LastFrameTick = lastFrameTick,
-              StartOffset = sessionStart,
-              DataOffset = dataStart
-            });
-
-            currentPos = sessionStart;
+            break;
           }
+
+          if (SpanReader.TryReadMagic(magic, Magic.SessionFooterMagic))
+          {
+            var footerData = new byte[16];
+            stream.ReadExactly(footerData);
+            frameCount = BinaryPrimitives.ReadUInt64LittleEndian(footerData.AsSpan(0, 8));
+            lastFrameTick = BinaryPrimitives.ReadUInt64LittleEndian(footerData.AsSpan(8, 8));
+            nextPos += FOOTER_SIZE;
+            break;
+          }
+
+          nextPos += totalFrameSize;
+          frameCount++;
+          lastFrameTick++;
         }
+
+        sessions.Add(new SessionInfo<SESSION>
+        {
+          Data = session,
+          FrameCount = frameCount,
+          LastFrameTick = lastFrameTick,
+          StartOffset = currentPos,
+          DataOffset = dataStart
+        });
+
+        currentPos = nextPos;
+      }
+      else
+      {
+        currentPos += Magic.MAGIC_SIZE;
       }
     }
 
@@ -229,11 +301,6 @@ public sealed class Reader<SESSION, FRAME> where SESSION : struct where FRAME : 
     var buffer = new byte[TelemetrySizeHelper<SESSION, FRAME>.SessionSize];
     stream.ReadExactly(buffer);
     return SpanReader.ReadStruct<T>(buffer);
-  }
-
-  private static long GetDataStart(long sessionStart)
-  {
-    return sessionStart + TelemetrySizeHelper<SESSION, FRAME>.SessionHeaderSize;
   }
 
   /// <summary>

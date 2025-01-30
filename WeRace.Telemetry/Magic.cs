@@ -21,12 +21,22 @@ public static class Magic
   /// <summary>
   /// Magic string for identifying the start of a session within a telemetry file.
   /// </summary>
-  public const string SessionMagic = "SESS0001";
+  public const string SessionMagic = "WRSE0001";
 
   /// <summary>
   /// Magic string for identifying the footer of a session within a telemetry file.
   /// </summary>
-  public const string SessionFooterMagic = "FOOT0001";
+  public const string SessionFooterMagic = "WRSF0001";
+
+  /// <summary>
+  /// Magic string for identifying the start of a document footer within a telemetry file.
+  /// </summary>
+  public const string DocumentFooterStartMagic = "WRDF0001";
+
+  /// <summary>
+  /// Magic string for identifying the end of a document footer within a telemetry file.
+  /// </summary>
+  public const string DocumentFooterEndMagic = "WRDE0001";
 
   static Magic()
   {
@@ -34,5 +44,7 @@ public static class Magic
     Debug.Assert(Encoding.ASCII.GetByteCount(FileMagic) == MAGIC_SIZE);
     Debug.Assert(Encoding.ASCII.GetByteCount(SessionMagic) == MAGIC_SIZE);
     Debug.Assert(Encoding.ASCII.GetByteCount(SessionFooterMagic) == MAGIC_SIZE);
+    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterStartMagic) == MAGIC_SIZE);
+    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterEndMagic) == MAGIC_SIZE);
   }
 }
