@@ -1,8 +1,16 @@
 using FsCheck;
 using FsCheck.Fluent;
 using FsCheck.Xunit;
+using System.Runtime.InteropServices;
 
 namespace WeRace.Telemetry.Tests;
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct TestSessionFooter {
+  public float FuelUsed;
+  public int LapsCompleted;
+  public float BestLapTime;
+}
 
 public class RoundTripTests {
   // Generators
@@ -13,27 +21,27 @@ public class RoundTripTests {
       Arb.From(Generators.TestDataGen),
       testData => {
         using var stream = new MemoryStream();
-        using (var writer = new Writer<TestSession, TestFrame>(stream, 60)) {
+        using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60)) {
           writer.BeginSession(testData.session);
           foreach (var frame in testData.frames) {
-            writer.WriteFrame(frame);
+            writer.WriteFrame((ulong)testData.frames.ToList().IndexOf(frame), frame);
           }
 
-          writer.EndSession();
+          writer.EndSession(new TestSessionFooter());
         }
 
         // Reset stream position and ensure data was written
         stream.Position = 0;
         Assert.True(stream.Length > 0, "No data was written to the stream");
 
-        var reader = Reader<TestSession, TestFrame>.Open(stream);
+        var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
         Assert.NotNull(reader);
         Assert.NotEmpty(reader.Sessions);
 
         var session = Assert.Single(reader.Sessions);
-        Assert.Equal(testData.session.SessionId, session.Data.SessionId);
-        Assert.Equal(testData.session.TrackId, session.Data.TrackId);
-        Assert.Equal(testData.session.CarId, session.Data.CarId);
+        Assert.Equal(testData.session.SessionId, session.Header.SessionId);
+        Assert.Equal(testData.session.TrackId, session.Header.TrackId);
+        Assert.Equal(testData.session.CarId, session.Header.CarId);
 
         var frames = reader.GetFrames(session).ToArray();
         Assert.Equal(testData.frames.Length, frames.Length);
@@ -53,36 +61,37 @@ public class RoundTripTests {
   [InlineData(100)]
   public void WriteAndReadMultipleSessions(int sessionCount) {
     using var stream = new MemoryStream();
-    using var writer = new Writer<TestSession, TestFrame>(stream, 60);
-
     var sessions = new List<(TestSession session, TestFrame[] frames)>();
-    var rnd = new Random(42);
 
-    for (var i = 0; i < sessionCount; i++) {
-      var session = new TestSession {
-        SessionId = i + 1,
-        TrackId = rnd.Next(1, 1000),
-        CarId = rnd.Next(1, 10000)
-      };
+    using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60)) {
+      var rnd = new Random(42);
 
-      var frames = Enumerable.Range(0, rnd.Next(10, 50))
-        .Select(_ => GenerateRandomFrame(rnd))
-        .ToArray();
+      for (var i = 0; i < sessionCount; i++) {
+        var session = new TestSession {
+          SessionId = i + 1,
+          TrackId = rnd.Next(1, 1000),
+          CarId = rnd.Next(1, 10000)
+        };
 
-      writer.BeginSession(session);
-      foreach (var frame in frames) {
-        writer.WriteFrame(frame);
+        var frames = Enumerable.Range(0, rnd.Next(10, 50))
+          .Select(_ => GenerateRandomFrame(rnd))
+          .ToArray();
+
+        writer.BeginSession(session);
+        foreach (var frame in frames) {
+          writer.WriteFrame((ulong)frames.ToList().IndexOf(frame), frame);
+        }
+
+        writer.EndSession(new TestSessionFooter());
+
+        sessions.Add((session, frames));
       }
-
-      writer.EndSession();
-
-      sessions.Add((session, frames));
     }
 
     Debugging.DumpFileStructure(stream);
 
     stream.Position = 0;
-    var reader = Reader<TestSession, TestFrame>.Open(stream);
+    var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
 
     Assert.Equal(sessionCount, reader.Sessions.Count);
 
@@ -90,9 +99,9 @@ public class RoundTripTests {
       var expectedSession = sessions[i];
       var actualSession = reader.Sessions[i];
 
-      Assert.Equal(expectedSession.session.SessionId, actualSession.Data.SessionId);
-      Assert.Equal(expectedSession.session.TrackId, actualSession.Data.TrackId);
-      Assert.Equal(expectedSession.session.CarId, actualSession.Data.CarId);
+      Assert.Equal(expectedSession.session.SessionId, actualSession.Header.SessionId);
+      Assert.Equal(expectedSession.session.TrackId, actualSession.Header.TrackId);
+      Assert.Equal(expectedSession.session.CarId, actualSession.Header.CarId);
 
       var frames = reader.GetFrames(actualSession).ToArray();
       Assert.Equal(expectedSession.frames.Length, frames.Length);
@@ -109,14 +118,14 @@ public class RoundTripTests {
     var session = new TestSession { SessionId = 1, TrackId = 1, CarId = 1 };
     var frames = new[] { GenerateRandomFrame(new Random(42)) };
 
-    using (var writer = new Writer<TestSession, TestFrame>(stream, 60)) {
+    using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60)) {
       writer.BeginSession(session);
-      writer.WriteFrame(frames[0]);
+      writer.WriteFrame(0UL, frames[0]);
       // Let disposal handle session end
     }
 
     stream.Position = 0;
-    var reader = Reader<TestSession, TestFrame>.Open(stream);
+    var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
 
     Assert.Single(reader.Sessions);
     var readFrames = reader.GetFrames(reader.Sessions[0]).ToArray();
@@ -132,13 +141,13 @@ public class RoundTripTests {
         using var stream = new MemoryStream();
         var expectedSampleRate = 60UL;
 
-        using (var writer = new Writer<TestSession, TestFrame>(stream, expectedSampleRate, metadata)) {
+        using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, expectedSampleRate, metadata)) {
           writer.BeginSession(new TestSession { SessionId = 1 });
-          writer.EndSession();
+          writer.EndSession(new TestSessionFooter());
         }
 
         stream.Position = 0;
-        var reader = Reader<TestSession, TestFrame>.Open(stream);
+        var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
         var readHeader = reader.Header;
 
         foreach (var (key, value) in metadata) {
@@ -162,13 +171,13 @@ public class RoundTripTests {
     using var stream = new MemoryStream();
     var metadata = new Dictionary<string, string> { { key, value } };
 
-    using (var writer = new Writer<TestSession, TestFrame>(stream, 60, metadata)) {
+    using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60, metadata)) {
       writer.BeginSession(new TestSession { SessionId = 1 });
-      writer.EndSession();
+      writer.EndSession(new TestSessionFooter());
     }
 
     stream.Position = 0;
-    var reader = Reader<TestSession, TestFrame>.Open(stream);
+    var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
     var readMetadata = reader.Header.Metadata;
 
     Assert.True(readMetadata.Entries.ContainsKey(key));

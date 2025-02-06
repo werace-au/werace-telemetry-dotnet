@@ -3,13 +3,21 @@ namespace WeRace.Telemetry;
 /// <summary>
 /// Represents combined session information including header and footer data.
 /// </summary>
-/// <typeparam name="SESSION">The session type with a fixed size structure.</typeparam>
-public readonly record struct SessionInfo<SESSION> where SESSION : struct
+/// <typeparam name="SESSION_HEADER">The session header type with a fixed size structure.</typeparam>
+/// <typeparam name="SESSION_FOOTER">The session footer type with a fixed size structure.</typeparam>
+public readonly record struct SessionInfo<SESSION_HEADER, SESSION_FOOTER>
+    where SESSION_HEADER : struct
+    where SESSION_FOOTER : struct
 {
   /// <summary>
-  /// The session data.
+  /// The session header data.
   /// </summary>
-  public required SESSION Data { get; init; }
+  public required SESSION_HEADER Header { get; init; }
+
+  /// <summary>
+  /// The session footer data.
+  /// </summary>
+  public required SESSION_FOOTER Footer { get; init; }
 
   /// <summary>
   /// The number of frames in the session.
@@ -30,4 +38,9 @@ public readonly record struct SessionInfo<SESSION> where SESSION : struct
   /// The byte offset in the stream where the session data starts.
   /// </summary>
   public required long DataOffset { get; init; }
+
+  /// <summary>
+  /// The byte offset in the stream where the session footer starts.
+  /// </summary>
+  public required long FooterOffset { get; init; }
 }

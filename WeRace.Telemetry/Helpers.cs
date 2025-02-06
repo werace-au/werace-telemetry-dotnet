@@ -35,11 +35,17 @@ internal static class SizeCalculator
 /// <summary>
 /// Provides cached size calculations for telemetry structures.
 /// </summary>
-internal static class TelemetrySizeHelper<SESSION, FRAME> where SESSION : struct where FRAME : struct
-{
+internal static class TelemetrySizeHelper<SESSION_HEADER, SESSION_FOOTER, FRAME> where SESSION_HEADER : struct where SESSION_FOOTER : struct where FRAME : struct {
+
+  public const int FileHeaderSize = 40;
+
+  public static readonly int SessionHeaderSize = SpanReader.GetAlignedSize<SESSION_HEADER>();
+  public static readonly int TotalSessionHeaderSize = Magic.MagicSize + SessionHeaderSize;
+
+  public static readonly int SessionFooterSize = SpanReader.GetAlignedSize<SESSION_FOOTER>();
+  public static readonly int TotalSessionFooterSize = Magic.MagicSize + 16 + SessionFooterSize;
+
+  public static readonly int FrameHeaderSize = SpanReader.GetAlignedSize<FrameHeader>();
   public static readonly int FrameSize = SpanReader.GetAlignedSize<FRAME>();
-  public static readonly int SessionSize = SpanReader.GetAlignedSize<SESSION>();
-  public static readonly int HeaderSize = SpanReader.GetAlignedSize<FrameHeader>();
-  public static readonly int TotalFrameSize = FrameSize + HeaderSize + SpanReader.GetPadding(FrameSize + HeaderSize);
-  public static readonly int SessionHeaderSize = Magic.MAGIC_SIZE + SessionSize + SpanReader.GetPadding(Magic.MAGIC_SIZE + SessionSize);
+  public static readonly int TotalFrameSize = FrameSize + FrameHeaderSize + SpanReader.GetPadding(FrameSize + FrameHeaderSize);
 }

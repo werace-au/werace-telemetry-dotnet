@@ -15,7 +15,7 @@ public static class SpanReader
 
   [MethodImpl(MethodImplOptions.AggressiveInlining)]
   public static int GetStructSize<T>() where T : struct =>
-      SizeCache.GetOrAdd(typeof(T), _ => Marshal.SizeOf<T>());
+    SizeCache.GetOrAdd(typeof(T), _ => Marshal.SizeOf<T>());
 
   [MethodImpl(MethodImplOptions.AggressiveInlining)]
   public static int GetAlignedSize<T>() where T : struct
@@ -40,14 +40,13 @@ public static class SpanReader
   }
 
   /// <summary>
-  /// Reads a UTF-8 encoded string from a span.
+  /// Reads a fixed-length ASCII string from a span.
   /// </summary>
   /// <param name="data">The span containing the string data.</param>
   /// <returns>The decoded string.</returns>
-  public static string ReadString(ReadOnlySpan<byte> data)
+  public static string ReadFixedLengthString(ReadOnlySpan<byte> data)
   {
-    var length = BinaryPrimitives.ReadInt32LittleEndian(data);
-    return Encoding.UTF8.GetString(data[4..(4 + length)]);
+    return Encoding.ASCII.GetString(data);
   }
 
   /// <summary>
@@ -57,7 +56,7 @@ public static class SpanReader
   /// <param name="source">The span containing the structure data.</param>
   /// <returns>The structure read from the span.</returns>
   /// <exception cref="ArgumentException">Thrown if the source span is too small.</exception>
-  public static unsafe T ReadStruct<T>(ReadOnlySpan<byte> source) where T : struct
+  public static unsafe T ReadAlignedStruct<T>(ReadOnlySpan<byte> source) where T : struct
   {
     var actualSize = GetStructSize<T>();
     var alignedSize = GetAlignedSize<T>();
@@ -74,19 +73,27 @@ public static class SpanReader
         source[..actualSize].CopyTo(new Span<byte>(aligned, actualSize));
         return Marshal.PtrToStructure<T>((IntPtr)aligned);
       }
+
       return Marshal.PtrToStructure<T>((IntPtr)ptr);
     }
   }
 
-  public static unsafe void WriteStruct<T>(T value, Span<byte> destination) where T : struct
+  public static unsafe void WriteAlignedStruct<T>(T value, Span<byte> destination) where T : struct
   {
-    var size = GetStructSize<T>();
-    if (destination.Length < size)
-      throw new ArgumentException($"Destination buffer too small. Need {size} bytes.", nameof(destination));
+    var actualSize = GetStructSize<T>();
+    var alignedSize = GetAlignedSize<T>();
+
+    if (destination.Length < alignedSize)
+      throw new ArgumentException($"Destination buffer too small. Need {alignedSize} bytes.", nameof(destination));
 
     fixed (byte* ptr = destination)
     {
+      // Create aligned buffer if needed
+
       Marshal.StructureToPtr(value, (IntPtr)ptr, false);
+      // Zero out padding bytes
+      if (actualSize < alignedSize)
+        destination.Slice(actualSize, alignedSize - actualSize).Clear();
     }
   }
 }

@@ -11,7 +11,7 @@ public static class Magic
   /// <summary>
   /// The size of magic strings in bytes.
   /// </summary>
-  public const int MAGIC_SIZE = 8;
+  public const int MagicSize = 8;
 
   /// <summary>
   /// Magic string for identifying a telemetry file.
@@ -21,7 +21,7 @@ public static class Magic
   /// <summary>
   /// Magic string for identifying the start of a session within a telemetry file.
   /// </summary>
-  public const string SessionMagic = "WRSE0001";
+  public const string SessionHeaderMagic = "WRSE0001";
 
   /// <summary>
   /// Magic string for identifying the footer of a session within a telemetry file.
@@ -41,10 +41,10 @@ public static class Magic
   static Magic()
   {
     // Verify all magic strings are exactly MAGIC_SIZE bytes
-    Debug.Assert(Encoding.ASCII.GetByteCount(FileMagic) == MAGIC_SIZE);
-    Debug.Assert(Encoding.ASCII.GetByteCount(SessionMagic) == MAGIC_SIZE);
-    Debug.Assert(Encoding.ASCII.GetByteCount(SessionFooterMagic) == MAGIC_SIZE);
-    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterStartMagic) == MAGIC_SIZE);
-    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterEndMagic) == MAGIC_SIZE);
+    Debug.Assert(Encoding.ASCII.GetByteCount(FileMagic) == MagicSize);
+    Debug.Assert(Encoding.ASCII.GetByteCount(SessionHeaderMagic) == MagicSize);
+    Debug.Assert(Encoding.ASCII.GetByteCount(SessionFooterMagic) == MagicSize);
+    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterStartMagic) == MagicSize);
+    Debug.Assert(Encoding.ASCII.GetByteCount(DocumentFooterEndMagic) == MagicSize);
   }
 }

@@ -1,3 +1,6 @@
+using System;
+using Xunit;
+
 namespace WeRace.Telemetry.Tests;
 
 public class SessionAlignmentTests
@@ -6,17 +9,17 @@ public class SessionAlignmentTests
     public void ValidateSessionAlignment()
     {
         using var stream = new MemoryStream();
-        using var writer = new Writer<TestSession, TestFrame>(stream, 60);
+        using var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60);
 
         var session1 = new TestSession { SessionId = 1 };
         writer.BeginSession(session1);
-        writer.WriteFrame(new TestFrame());
-        writer.EndSession();
+        writer.WriteFrame(100, new TestFrame());
+        writer.EndSession(new TestSessionFooter());
 
         var session2 = new TestSession { SessionId = 2 };
         writer.BeginSession(session2);
-        writer.WriteFrame(new TestFrame());
-        writer.EndSession();
+        writer.WriteFrame(100, new TestFrame());
+        writer.EndSession(new TestSessionFooter());
 
         var bytes = stream.ToArray();
         AssertSessionBoundaries(bytes);
@@ -26,17 +29,17 @@ public class SessionAlignmentTests
     public void ValidateSessionHeaderAndFooterPositioning()
     {
         using var stream = new MemoryStream();
-        using var writer = new Writer<TestSession, TestFrame>(stream, 60);
+        using var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60);
 
         var session = new TestSession { SessionId = 1 };
         writer.BeginSession(session);
 
-        for (int i = 0; i < 5; i++)
+        for (var i = 0UL; i < 5; i++)
         {
-            writer.WriteFrame(new TestFrame());
+            writer.WriteFrame(i, new TestFrame());
         }
 
-        writer.EndSession();
+        writer.EndSession(new TestSessionFooter());
 
         var bytes = stream.ToArray();
         var (headerPos, footerPos) = FindSessionBoundaries(bytes);
@@ -55,19 +58,19 @@ public class SessionAlignmentTests
     public void ValidateMultipleSessionAlignment()
     {
         using var stream = new MemoryStream();
-        using var writer = new Writer<TestSession, TestFrame>(stream, 60);
+        using var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60);
 
-        for (int i = 1; i <= 3; i++)
+        for (var i = 1; i <= 3; i++)
         {
             writer.BeginSession(new TestSession { SessionId = i });
-            writer.WriteFrame(new TestFrame());
-            writer.EndSession();
+            writer.WriteFrame(100, new TestFrame());
+            writer.EndSession(new TestSessionFooter());
         }
 
         var bytes = stream.ToArray();
         var positions = FindAllSessionBoundaries(bytes);
 
-        for (int i = 0; i < positions.Count - 1; i++)
+        for (var i = 0; i < positions.Count - 1; i++)
         {
             Assert.True(positions[i].footerPos < positions[i + 1].headerPos,
                        $"Session {i + 1} overlaps with session {i + 2}");
@@ -79,63 +82,54 @@ public class SessionAlignmentTests
     [Fact]
     public void ValidateSessionFooterWriteRead()
     {
-      using var stream = new MemoryStream();
-      using var writer = new Writer<TestSession, TestFrame>(stream, 60);
+        using var stream = new MemoryStream();
+        var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60);
 
-      var session = new TestSession { SessionId = 1 };
-      writer.BeginSession(session);
-
-      for (var i = 0; i < 5; i++)
-      {
-        var frame = new TestFrame
+        try
         {
-          Speed = i * 10.0f,
-          RPM = i * 1000.0f,
-          Throttle = i * 0.2f,
-          Brake = i * 0.1f,
-          Steering = i * 0.25f,
-          Position = new Vector3 { X = i, Y = i * 2, Z = i * 3 },
-          Rotation = new Vector3 { X = i * 10, Y = i * 20, Z = i * 30 }
-        };
-        writer.WriteFrame(frame);
-      }
+            var session = new TestSession { SessionId = 1 };
+            writer.BeginSession(session);
 
-      writer.EndSession();
+            for (var i = 0; i < 5; i++)
+            {
+                var frame = new TestFrame
+                {
+                    Speed = i * 10.0f,
+                    RPM = i * 1000.0f,
+                    Throttle = i * 0.2f,
+                    Brake = i * 0.1f,
+                    Steering = i * 0.25f,
+                    Position = new Vector3 { X = i, Y = i * 2, Z = i * 3 },
+                    Rotation = new Vector3 { X = i * 10, Y = i * 20, Z = i * 30 }
+                };
+                writer.WriteFrame((ulong) i, frame);
+            }
 
-      Debugging.DumpFileStructure(stream);
+            writer.EndSession(new TestSessionFooter { FuelUsed = 50.0f, LapsCompleted = 5, BestLapTime = 123.456f });
+        }
+        finally
+        {
+            writer.Dispose();
+        }
 
-      stream.Position = 0;
-      var reader = Reader<TestSession, TestFrame>.Open(stream);
+        Debugging.DumpFileStructure(stream);
 
-      Assert.Single(reader.Sessions);
-      var readSession = reader.Sessions[0];
-      var frames = reader.GetFrames(readSession).ToList();
+        stream.Position = 0;
+        var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
+        var readSession = Assert.Single(reader.Sessions);
 
-      Assert.Equal(5, frames.Count);
-      for (var i = 0; i < 5; i++)
-      {
-        var frame = frames[i];
-        Assert.Equal(i * 10.0f, frame.Data.Speed);
-        Assert.Equal(i * 1000.0f, frame.Data.RPM);
-      }
+        Assert.Equal(5UL, readSession.FrameCount);
+        Assert.Equal(4UL, readSession.LastFrameTick);
+        Assert.Equal(50.0f, readSession.Footer.FuelUsed);
+        Assert.Equal(5, readSession.Footer.LapsCompleted);
+        Assert.Equal(123.456f, readSession.Footer.BestLapTime);
     }
 
     private static void AssertSessionBoundaries(byte[] bytes)
     {
         var positions = FindAllSessionBoundaries(bytes);
-
         foreach (var pos in positions)
         {
-            Assert.True(SpanReader.TryReadMagic(
-                new ReadOnlySpan<byte>(bytes, (int)pos.headerPos, 8),
-                Magic.SessionMagic),
-                $"Invalid session header magic at position {pos.headerPos}");
-
-            Assert.True(SpanReader.TryReadMagic(
-                new ReadOnlySpan<byte>(bytes, (int)pos.footerPos, 8),
-                Magic.SessionFooterMagic),
-                $"Invalid session footer magic at position {pos.footerPos}");
-
             Assert.True(pos.headerPos % 8 == 0, $"Header at {pos.headerPos} not aligned");
             Assert.True(pos.footerPos % 8 == 0, $"Footer at {pos.footerPos} not aligned");
         }
@@ -143,7 +137,7 @@ public class SessionAlignmentTests
 
     private static (long headerPos, long footerPos) FindSessionBoundaries(byte[] bytes)
     {
-        var headerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionMagic);
+        var headerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionHeaderMagic);
         var footerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionFooterMagic);
 
         var headerPos = FindPattern(bytes, headerMagic);
@@ -158,41 +152,40 @@ public class SessionAlignmentTests
     private static List<(long headerPos, long footerPos)> FindAllSessionBoundaries(byte[] bytes)
     {
         var boundaries = new List<(long headerPos, long footerPos)>();
-        var headerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionMagic);
+        var headerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionHeaderMagic);
         var footerMagic = System.Text.Encoding.ASCII.GetBytes(Magic.SessionFooterMagic);
 
-        var currentPos = 0;
-        while (currentPos < bytes.Length)
+        var pos = 0;
+        while (pos < bytes.Length)
         {
-            var headerPos = FindPattern(new ReadOnlySpan<byte>(bytes, currentPos, bytes.Length - currentPos), headerMagic);
+            var headerPos = FindPattern(bytes, headerMagic, pos);
             if (headerPos < 0) break;
 
-            headerPos += currentPos;
-            currentPos = headerPos + 8;
-
-            var footerPos = FindPattern(new ReadOnlySpan<byte>(bytes, currentPos, bytes.Length - currentPos), footerMagic);
+            var footerPos = FindPattern(bytes, footerMagic, headerPos);
             if (footerPos < 0) break;
 
-            footerPos += currentPos;
-            currentPos = footerPos + 8;
-
             boundaries.Add((headerPos, footerPos));
+            pos = footerPos + footerMagic.Length;
         }
 
         return boundaries;
     }
 
-    private static int FindPattern(ReadOnlySpan<byte> data, ReadOnlySpan<byte> pattern)
+    private static int FindPattern(byte[] data, byte[] pattern, int startIndex = 0)
     {
-        for (int i = 0; i <= data.Length - pattern.Length; i++)
+        for (var i = startIndex; i <= data.Length - pattern.Length; i++)
         {
-            if (data.Slice(i, pattern.Length).SequenceEqual(pattern))
+            var found = true;
+            for (var j = 0; j < pattern.Length; j++)
             {
-                return i;
+                if (data[i + j] != pattern[j])
+                {
+                    found = false;
+                    break;
+                }
             }
+            if (found) return i;
         }
         return -1;
     }
-
-
 }

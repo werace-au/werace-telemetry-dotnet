@@ -10,19 +10,19 @@ public class SessionRoundTripTests
   {
     using var stream = new MemoryStream();
 
-    using (var writer = new Writer<TestSession, TestFrame>(stream, 60))
+    using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60))
     {
       writer.BeginSession(new TestSession { SessionId = 1 });
 
       for (var i = 0; i < frameCount; i++)
       {
-        writer.WriteFrame(new TestFrame());
+        writer.WriteFrame((ulong)i, new TestFrame());
       }
-      writer.EndSession();
+      writer.EndSession(new TestSessionFooter());
     }
 
     stream.Position = 0;
-    var reader = Reader<TestSession, TestFrame>.Open(stream);
+    var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
     var session = Assert.Single(reader.Sessions);
 
     Assert.Equal((ulong)frameCount, session.FrameCount);
@@ -42,17 +42,18 @@ public class SessionRoundTripTests
   {
     using var stream = new MemoryStream();
 
-    using (var writer = new Writer<TestSession, TestFrame>(stream, 60))
+    using (var writer = new Writer<TestSession, TestSessionFooter, TestFrame>(stream, 60))
     {
       writer.BeginSession(new TestSession { SessionId = 1 });
-      writer.EndSession();
+      writer.EndSession(new TestSessionFooter());
     }
 
     stream.Position = 0;
-    var reader = Reader<TestSession, TestFrame>.Open(stream);
+    var reader = Reader<TestSession, TestSessionFooter, TestFrame>.Open(stream);
     var session = Assert.Single(reader.Sessions);
 
     Assert.Equal(0UL, session.FrameCount);
     Assert.Equal(0UL, session.LastFrameTick);
+    Assert.Empty(reader.GetFrames(session));
   }
 }

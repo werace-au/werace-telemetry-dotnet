@@ -34,8 +34,8 @@ A WRTF file consists of these main sections:
 3. One or more Sessions, each containing:
    - Session Header
    - Frame Data
-   - Session Footer (if complete)
-4. Document Footer (if complete)
+   - Session Footer
+4. Document Footer
 
 ### Endianness
 
@@ -49,7 +49,7 @@ A WRTF file consists of these main sections:
 ## 3. Header Structure
 
 | Offset | Size     | Type     | Description                                        |
-|--------|----------|----------|----------------------------------------------------|
+| ------ | -------- | -------- | -------------------------------------------------- |
 | 0      | 8        | char[8]  | Magic number `"WRTF0001"`                          |
 | 8      | 8        | uint64   | Version number (1)                                 |
 | 16     | 8        | uint64   | Sample rate (Hz)                                   |
@@ -75,71 +75,67 @@ The metadata dictionary starts at offset `40`, immediately after the fixed heade
 
 Example header with two metadata entries:
 
-| Offset | Size | Content              | Description                |
-|--------|------|----------------------|----------------------------|
-| 0      | 8    | `"WRTF0001"`         | Magic number               |
-| 8      | 8    | `1`                  | Version number             |
-| 16     | 8    | `48000`              | Sample rate (Hz)           |
-| 24     | 8    | `1698771650000000`   | Start timestamp            |
-| 32     | 4    | `2`                  | Number of metadata entries |
-| 36     | 4    | `0`                  | Reserved                   |
-| 40     | 4    | `5`                  | Key length ("Track")       |
-| 44     | 5    | `"Track"`            | Key                        |
-| 49     | 3    | `0`                  | Padding                    |
-| 52     | 4    | `20`                 | Value length               |
+| Offset | Size | Content                | Description                |
+| ------ | ---- | ---------------------- | -------------------------- |
+| 0      | 8    | `"WRTF0001"`           | Magic number               |
+| 8      | 8    | `1`                    | Version number             |
+| 16     | 8    | `48000`                | Sample rate (Hz)           |
+| 24     | 8    | `1698771650000000`     | Start timestamp            |
+| 32     | 4    | `2`                    | Number of metadata entries |
+| 36     | 4    | `0`                    | Reserved                   |
+| 40     | 4    | `5`                    | Key length ("Track")       |
+| 44     | 5    | `"Track"`              | Key                        |
+| 49     | 3    | `0`                    | Padding                    |
+| 52     | 4    | `20`                   | Value length               |
 | 56     | 20   | `"iracing:track/日本"` | Value                      |
-| 76     | 4    | `0`                  | Padding                    |
-| 80     | 4    | `3`                  | Key length ("Car")         |
-| 84     | 3    | `"Car"`              | Key                        |
-| 87     | 5    | `0`                  | Padding                    |
-| 92     | 4    | `18`                 | Value length               |
-| 96     | 18   | `"iracing:car/4321"` | Value                      |
-| 114    | 2    | `0`                  | Padding                    |
+| 76     | 4    | `0`                    | Padding                    |
+| 80     | 4    | `3`                    | Key length ("Car")         |
+| 84     | 3    | `"Car"`                | Key                        |
+| 87     | 5    | `0`                    | Padding                    |
+| 92     | 4    | `18`                   | Value length               |
+| 96     | 18   | `"iracing:car/4321"`   | Value                      |
+| 114    | 2    | `0`                    | Padding                    |
 
-## 5. Session Section
+## 4. Session Section
 
 ### Session Header Format
 
 Each session starts with a fixed header structure:
 
-| Offset | Size     | Type    | Description                                   |
-|--------|----------|---------|-----------------------------------------------|
-| 0      | 8        | char[8] | Magic number "WRSE0001"                       |
-| 8      | [S]      | Session | Session data structure (as defined in schema) |
-| ...    | Variable | Padding | Ensures 8-byte alignment                      |
+| Offset | Size | Type          | Description                                          |
+| ------ | ---- | ------------- | ---------------------------------------------------- |
+| 0      | 8    | char[8]       | Magic number "WRSE0001"                              |
+| 8      | [S]  | SessionHeader | Session header data structure (as defined in schema) |
 
 ### Session Footer Format
 
 Each session in a complete file must end with a footer structure:
 
-| Offset | Size     | Type    | Description                                          |
-|--------|----------|---------|------------------------------------------------------|
-| 0      | 8        | char[8] | Magic number "WRSF0001"                              |
-| 8      | 8        | uint64  | Number of frames in session                          |
-| 16     | 8        | uint64  | Last frame tick                                      |
-| 24     | [S]      | Session | Session footer data structure (as defined in schema) |
-| ...    | Variable | Padding | Ensures 8-byte alignment                             |
-
-The session footer data structure is optional and defined in the channel schema.
-
-### Document Footer Format
-
-A complete WRTF file must end with a document footer:
-
-| Offset from EOF | Size | Type      | Description              |
-|-----------------|------|-----------|--------------------------|
-| -32-N*24        | 8    | char[8]   | Start marker "WRDF0001"  |
-| -24-N*24        | N*24 | Session[] | Array of session entries |
-| -16             | 8    | uint64    | Number of sessions (N)   |
-| -8              | 8    | char[8]   | End marker "WRDE0001"    |
+| Offset | Size | Type          | Description                                          |
+| ------ | ---- | ------------- | ---------------------------------------------------- |
+| 0      | 8    | char[8]       | Magic number "WRSF0001"                              |
+| 8      | 8    | uint64        | Number of frames in session                          |
+| 16     | 8    | uint64        | Last frame tick                                      |
+| 24     | [S]  | SessionFooter | Session footer data structure (as defined in schema) |
 
 ### Session Entry Format
 
 | Offset | Size | Type   | Description                              |
-|--------|------|--------|------------------------------------------|
+| ------ | ---- | ------ | ---------------------------------------- |
 | 0      | 8    | uint64 | Session offset from start of file        |
 | 8      | 8    | uint64 | Session footer offset from start of file |
 | 16     | 8    | uint64 | Number of frames in session              |
+
+## 5. Document Footer
+
+A complete WRTF file must end with a document footer:
+
+| Offset from EOF | Size  | Type      | Description              |
+| --------------- | ----- | --------- | ------------------------ |
+| -(24 + N24)     | 8     | char[8]   | Start marker "WRDF0001"  |
+| -(16 + N24)     | N\*24 | Session[] | Array of session entries |
+| -16             | 8     | uint64    | Number of sessions (N)   |
+| -8              | 8     | char[8]   | End marker "WRDE0001"    |
 
 ### Document Footer Reading
 
@@ -148,23 +144,12 @@ To read the document footer:
 1. Find the end marker "WRDE0001" at the end of the file
 2. Read the number of sessions (N) from offset -16
 3. Read the session entries array
-4. Verify the start marker at offset -32-N*24
+4. Verify the start marker at offset -32-N\*24
 
 ### Session Discovery
 
-For complete files:
-
 1. The document footer provides direct access to all sessions
 2. Each session has a session footer with frame count and optional data
-
-For incomplete files:
-
-1. Sessions must be discovered by forward scanning from the start of the file
-2. Each session starts with a session header ("WRSE0001")
-3. A session continues until either:
-   - Another session header is encountered
-   - End of file is reached
-4. Frame counting must be done manually by scanning the session data
 
 ## 6. Frame Section
 
@@ -173,7 +158,7 @@ For incomplete files:
 Each frame starts with an 8-byte header:
 
 | Offset | Size | Type   | Description      |
-|--------|------|--------|------------------|
+| ------ | ---- | ------ | ---------------- |
 | 0      | 8    | uint64 | Frame tick count |
 
 The tick count increments by 1 each sample period. Frame ticks must be ordered within a session but are not required to be continuous. Gaps indicate dropped frames.
@@ -187,7 +172,7 @@ frame_time = session_timestamp + (tick_count * (1_000_000 / sample_rate))
 ### Frame Layout Format
 
 | Component      | Size     | Description               |
-|----------------|----------|---------------------------|
+| -------------- | -------- | ------------------------- |
 | Frame Header   | 8        | Frame tick count          |
 | Channel Values | Varies   | Sequential channel values |
 | Padding        | Variable | Ensures 8-byte alignment  |
@@ -201,7 +186,7 @@ Frame size is fixed and determined by:
 ## 7. Data Types
 
 | Value | Type    | Size (bytes) | Description                                |
-|-------|---------|--------------|--------------------------------------------|
+| ----- | ------- | ------------ | ------------------------------------------ |
 | 0     | int8    | 1            | 8-bit signed integer                       |
 | 1     | uint8   | 1            | 8-bit unsigned integer                     |
 | 2     | int16   | 2            | 16-bit signed integer                      |
@@ -221,9 +206,10 @@ Frame size is fixed and determined by:
 1. The header starts at file offset 0
 2. The metadata section starts immediately after the header
 3. Each metadata entry is padded to 8-byte boundary
-4. Each session header, frame, and footer is padded to 8-byte boundary
-5. All integral types are aligned to their natural boundaries within structs
-6. All padding bytes should be set to 0
+4. Session headers and footers are padded to 8-byte boundary
+5. Frames are padded to 8-byte boundary
+6. All integral types are aligned to their natural boundaries within structs
+7. All padding bytes should be set to 0
 
 ## 9. Validation Requirements
 
@@ -241,14 +227,14 @@ Frame size is fixed and determined by:
 1. Must contain all required metadata keys
 2. Keys must be unique
 3. Keys and values must be valid UTF-8
-4. "created_at" must be valid ISO 8601
+4. Keys must be not be empty strings
 
 ### Session Validation
 
 1. Session headers must have valid magic number ("WRSE0001")
 2. In complete files:
    - Each session must have a valid session footer with magic number ("WRSF0001")
-   - Session footer data (if present) must match schema definition
+   - Session footer data must match schema definition
 3. Session structures must match schema definition
 4. Frame ticks must be ordered within each session
 

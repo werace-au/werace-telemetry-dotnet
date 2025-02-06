@@ -1,8 +1,11 @@
+using System.Runtime.InteropServices;
+
 namespace WeRace.Telemetry;
 
 /// <summary>
 /// Represents a session entry in the document footer.
 /// </summary>
+[StructLayout(LayoutKind.Sequential, Size = 24)]
 public readonly struct SessionEntry
 {
     /// <summary>

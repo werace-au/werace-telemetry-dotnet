@@ -9,10 +9,11 @@ public class HeaderAlignmentTests
     {
         // The fixed header should be exactly 40 bytes and aligned
         using var stream = new MemoryStream();
-        using var writer = new Writer<UnalignedTestSession, TestFrame>(stream, 60);
+        using var writer = new Writer<UnalignedTestSession, TestSessionFooter, TestFrame>(stream, 60);
 
         // Writing just the header by starting a session but not writing data
         writer.BeginSession(new UnalignedTestSession());
+        writer.EndSession(new TestSessionFooter());
 
         var bytes = stream.ToArray();
 
@@ -30,9 +31,10 @@ public class HeaderAlignmentTests
     public void ValidateEmptyMetadataSectionAlignment()
     {
         using var stream = new MemoryStream();
-        using var writer = new Writer<UnalignedTestSession, TestFrame>(stream, 60);
+        using var writer = new Writer<UnalignedTestSession, TestSessionFooter, TestFrame>(stream, 60);
 
         writer.BeginSession(new UnalignedTestSession());
+        writer.EndSession(new TestSessionFooter());
         var bytes = stream.ToArray();
 
         // With no metadata, the session header should start at the next 8-byte boundary after the fixed header
@@ -44,23 +46,24 @@ public class HeaderAlignmentTests
 
         Assert.True(SpanReader.TryReadMagic(
             bytes.AsSpan(expectedSessionStart, 8),
-            Magic.SessionMagic),
+            Magic.SessionHeaderMagic),
             $"Session magic not found at offset {expectedSessionStart}");
     }
 
     [Fact]
     public void ValidateFixedHeaderSize()
     {
-      using var stream = new MemoryStream();
-      using var writer = new Writer<UnalignedTestSession, TestFrame>(stream, 60);
+        using var stream = new MemoryStream();
+        using var writer = new Writer<UnalignedTestSession, TestSessionFooter, TestFrame>(stream, 60);
 
-      writer.BeginSession(new UnalignedTestSession());
-      var bytes = stream.ToArray();
+        writer.BeginSession(new UnalignedTestSession());
+        writer.EndSession(new TestSessionFooter());
+        var bytes = stream.ToArray();
 
-      PrintBytes(bytes, 48, "File Start");
+        PrintBytes(bytes, 48, "File Start");
 
-      // Verify session header starts at offset 40
-      Assert.True(SpanReader.TryReadMagic(bytes.AsSpan(40, 8), Magic.SessionMagic));
+        // Verify session header starts at offset 40
+        Assert.True(SpanReader.TryReadMagic(bytes.AsSpan(40, 8), Magic.SessionHeaderMagic));
     }
 
     [Theory]
@@ -70,13 +73,14 @@ public class HeaderAlignmentTests
     public void ValidateMetadataAlignment(string key, string value)
     {
         using var stream = new MemoryStream();
-        using var writer = new Writer<UnalignedTestSession, TestFrame>(
+        using var writer = new Writer<UnalignedTestSession, TestSessionFooter, TestFrame>(
             stream,
             60,
             new Dictionary<string, string> { { key, value } }
         );
 
         writer.BeginSession(new UnalignedTestSession());
+        writer.EndSession(new TestSessionFooter());
         var bytes = stream.ToArray();
 
         // Calculate where metadata section should end
@@ -97,7 +101,7 @@ public class HeaderAlignmentTests
 
         Assert.True(SpanReader.TryReadMagic(
             bytes.AsSpan(expectedMetadataEnd, 8),
-            Magic.SessionMagic),
+            Magic.SessionHeaderMagic),
             $"Session magic not found at offset {expectedMetadataEnd}");
     }
 
