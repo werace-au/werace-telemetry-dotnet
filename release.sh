@@ -347,7 +347,7 @@ main() {
   if [ "$NO_GIT" = false ]; then
     # Commit version updates
     git add Directory.Build.props
-    git commit -m "[chore] bump version to $next_version"
+    git commit -m "[chore] bumped version to $next_version"
 
     # Create and push release tag
     create_git_release "$next_version"
