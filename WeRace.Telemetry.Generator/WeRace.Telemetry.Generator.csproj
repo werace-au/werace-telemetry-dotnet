@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>WeRace.Telemetry.Generator</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.2</Version>
     <Authors>Kevin O'Neill</Authors>
     <Description>A source generator supporting the creation of frames and session structures for WeRace.Telemetry</Description>
     <PackageTags>telemetry;iracing;raceroom</PackageTags>

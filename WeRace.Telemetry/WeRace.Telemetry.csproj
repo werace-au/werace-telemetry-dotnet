@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>WeRace.Telemetry</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Authors>Kevin O'Neill</Authors>
     <Description>A stream reader and writer for the we race telemetry format</Description>
     <PackageTags>telemetry;iracing;raceroom</PackageTags>
