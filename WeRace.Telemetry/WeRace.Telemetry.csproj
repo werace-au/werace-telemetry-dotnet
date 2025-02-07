@@ -2,15 +2,10 @@
 
   <PropertyGroup>
     <PackageId>WeRace.Telemetry</PackageId>
-    <Version>0.1.2</Version>
-    <Authors>Kevin O'Neill</Authors>
     <Description>A stream reader and writer for the we race telemetry format</Description>
-    <PackageTags>telemetry;iracing;raceroom</PackageTags>
-    <RepositoryUrl>https://github.com/werace-au/werace-telemetry-dotnet</RepositoryUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latestmajor</LangVersion>
