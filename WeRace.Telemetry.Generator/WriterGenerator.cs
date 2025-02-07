@@ -31,34 +31,34 @@ internal class WriterGenerator : GeneratorBase
     source.AppendLine("{");
 
     // Store the underlying writer
-    source.AppendLine($"{Indent(1)}private readonly Writer<{typeName}Session, {typeName}> _writer;");
+    source.AppendLine($"{Indent(1)}private readonly Writer<{typeName}SessionHeader, {typeName}SessionFooter, {typeName}> _writer;");
     source.AppendLine();
 
     // Constructor
     source.AppendLine($"{Indent(1)}public {typeName}Writer(Stream stream, ulong sampleRate, IReadOnlyDictionary<string, string>? metadata = null)");
     source.AppendLine($"{Indent(1)}{{");
-    source.AppendLine($"{Indent(2)}_writer = new Writer<{typeName}Session, {typeName}>(stream, sampleRate, metadata);");
+    source.AppendLine($"{Indent(2)}_writer = new Writer<{typeName}SessionHeader, {typeName}SessionFooter, {typeName}>(stream, sampleRate, metadata);");
     source.AppendLine($"{Indent(1)}}}");
     source.AppendLine();
 
     // BeginSession method
-    source.AppendLine($"{Indent(1)}public void BeginSession({typeName}Session sessionData)");
+    source.AppendLine($"{Indent(1)}public void BeginSession({typeName}SessionHeader sessionHeader)");
     source.AppendLine($"{Indent(1)}{{");
-    source.AppendLine($"{Indent(2)}_writer.BeginSession(sessionData);");
+    source.AppendLine($"{Indent(2)}_writer.BeginSession(sessionHeader);");
     source.AppendLine($"{Indent(1)}}}");
     source.AppendLine();
 
     // WriteFrame method
-    source.AppendLine($"{Indent(1)}public void WriteFrame({typeName} frame)");
+    source.AppendLine($"{Indent(1)}public void WriteFrame(ulong tick, {typeName} frame)");
     source.AppendLine($"{Indent(1)}{{");
-    source.AppendLine($"{Indent(2)}_writer.WriteFrame(frame);");
+    source.AppendLine($"{Indent(2)}_writer.WriteFrame(tick, frame);");
     source.AppendLine($"{Indent(1)}}}");
     source.AppendLine();
 
     // EndSession method
-    source.AppendLine($"{Indent(1)}public void EndSession()");
+    source.AppendLine($"{Indent(1)}public void EndSession({typeName}SessionFooter sessionFooter)");
     source.AppendLine($"{Indent(1)}{{");
-    source.AppendLine($"{Indent(2)}_writer.EndSession();");
+    source.AppendLine($"{Indent(2)}_writer.EndSession(sessionFooter);");
     source.AppendLine($"{Indent(1)}}}");
     source.AppendLine();
 
