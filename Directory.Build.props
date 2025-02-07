@@ -1,0 +1,9 @@
+<Project>
+    <PropertyGroup>
+        <Version>0.1.0</Version>
+        <PackageVersion>0.1.0</PackageVersion>
+        <Authors>Your Name</Authors>
+        <Company>Your Company</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+</Project>
