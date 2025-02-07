@@ -30,7 +30,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="All" />
     <PackageReference Include="YamlDotNet" GeneratePathProperty="True" PrivateAssets="All" />
   </ItemGroup>
 
