@@ -346,7 +346,7 @@ main() {
 
   if [ "$NO_GIT" = false ]; then
     # Commit version updates
-    git add WeRace.Telemetry/WeRace.Telemetry.csproj WeRace.Telemetry.Generator/WeRace.Telemetry.Generator.csproj
+    git add Directory.Build.props
     git commit -m "[chore] bump version to $next_version"
 
     # Create and push release tag
