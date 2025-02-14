@@ -1,33 +1,37 @@
 version: "1.0"
+
 metadata:
-  title: "Array Test"
-  description: "Test Description"
+  title: "Test Telemetry"
+  description: "Test telemetry definition"
+
 types:
   sensor_readings:
-    description: "Sensor data"
     type: struct
+    description: "Sensor data"
     fields:
-      - name: temperatures
+      - name: temperature
         type: float32
         dimensions: 4
         description: "Temperature readings"
         unit: "celsius"
+      - name: pressure
+        type: float32
+        dimensions: 0
+        description: "Pressure reading"
+        unit: "kpa"
+
 session:
-  description: "Test session information"
   header:
-    description: "Session header information"
     fields:
       - name: type
         type: uint32
         dimensions: 0
-        description: "Session type identifier"
-      - name: name
-        type: uint32
-        dimensions: 0
-        description: "Session name"
-channels:
-  - name: sensors
-    type: sensor_readings
-    dimensions: 2
-    description: "Sensor array"
-    tags: ["data"]
+        description: "Session type"
+
+frame:
+  fields:
+    - name: sensors
+      type: sensor_readings
+      dimensions: 2
+      description: "Sensor array"
+      tags: ["sensors"]

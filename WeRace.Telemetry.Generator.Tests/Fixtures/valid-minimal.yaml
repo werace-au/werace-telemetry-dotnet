@@ -1,21 +1,24 @@
 # valid-minimal.yaml
 version: "1.0"
+
 metadata:
   title: "Test Telemetry"
-  description: "Test Description"
+  description: "Test telemetry definition"
+
 types: {}
+
 session:
-  description: "Basic session information"
   header:
-    description: "Session header information"
     fields:
       - name: type
         type: uint32
         dimensions: 0
-        description: "Session type identifier"
-channels:
-  - name: timestamp
-    type: uint64
-    dimensions: 0
-    description: "Timestamp"
-    tags: ["required"]
+        description: "Session type"
+
+frame:
+  fields:
+    - name: timestamp
+      type: uint64
+      dimensions: 0
+      description: "Timestamp"
+      tags: ["required"]

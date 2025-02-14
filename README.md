@@ -38,8 +38,8 @@ dotnet add package WeRace.Telemetry
 ```yaml
 version: "1.0"
 metadata:
-  title: "Car Telemetry"
-  description: "A channel set for a car"
+  title: "WeRace Telemetry"
+  description: "A telemetry definition for race data"
 
 types:
   vector3:

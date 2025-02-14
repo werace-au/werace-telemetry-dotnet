@@ -1,36 +1,39 @@
 version: "1.0"
+
 metadata:
-  title: "Test"
-  description: "Test"
+  title: "Test Telemetry"
+  description: "Test telemetry definition"
+
 types:
   type_a:
-    description: "Type A"
     type: struct
+    description: "Type A"
     fields:
       - name: b
         type: type_b
         dimensions: 0
-        description: "Field B"
+        description: "Field of type B"
+
   type_b:
-    description: "Type B"
     type: struct
+    description: "Type B"
     fields:
       - name: a
         type: type_a
         dimensions: 0
-        description: "Field A"
+        description: "Field of type A"
+
 session:
-  description: "Test session"
   header:
-    description: "Session header information"
     fields:
       - name: type
         type: uint32
         dimensions: 0
         description: "Session type"
-channels:
-  - name: test
-    type: type_a
-    dimensions: 0
-    description: "Test"
-    tags: []
+
+frame:
+  fields:
+    - name: a
+      type: type_a
+      dimensions: 0
+      description: "Field of type A"

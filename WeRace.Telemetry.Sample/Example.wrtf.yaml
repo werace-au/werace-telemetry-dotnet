@@ -1,251 +1,339 @@
 version: "1.0"
-metadata:
-  title: "Formula Race Car Telemetry"
-  description: "Complete telemetry channel set for formula race car"
 
-session:
-  description: "Race session information"
-  header:
-    description: "Session initialization data"
-    fields:
-      - name: type
-        type: session_type
-        dimensions: 0
-        description: The type of Session
-        tags: ["metadata"]
-      - name: driver_id
-        type: uint32
-        dimensions: 0
-        description: "Driver identifier"
-        tags: ["metadata"]
-      - name: track_config
-        type: uint32
-        dimensions: 0
-        description: "Track configuration identifier"
-        tags: ["metadata"]
-      - name: ambient_temp
-        type: float32
-        dimensions: 0
-        description: "Ambient temperature at session start"
-        unit: "celsius"
-        tags: ["weather"]
-  footer:
-    description: "Session summary information"
-    fields:
-      - name: total_laps
-        type: uint32
-        dimensions: 0
-        description: "Total laps completed"
-        tags: ["summary"]
-      - name: best_lap_time
-        type: uint32
-        dimensions: 0
-        description: "Best lap time achieved"
-        unit: "ms"
-        tags: ["summary"]
-      - name: total_distance
-        type: float32
-        dimensions: 0
-        description: "Total distance covered"
-        unit: "meters"
-        tags: ["summary"]
-      - name: fuel_used
-        type: float32
-        dimensions: 0
-        description: "Total fuel consumed"
-        unit: "liters"
-        tags: ["summary"]
+metadata:
+  title: WeRace iRacing Live Telemetry
+  description: Live telemetry data from iRacing.
 
 types:
-  log_level:
+  SessionState:
     type: enum
-    description: "Log severity levels"
+    description: "The state of the iRacing session."
     values:
-      - name: Debug
+      - name: Invalid
         value: 0
-        description: "Debug message"
-      - name: Info
+        description: "Invalid session state."
+      - name: GetInCar
         value: 1
-        description: "Information message"
-      - name: Error
+        description: "Getting in the car."
+      - name: Warmup
         value: 2
-        description: "Error message"
+        description: "Warmup lap."
+      - name: ParadeLaps
+        value: 3
+        description: "Parade laps."
+      - name: Racing
+        value: 4
+        description: "Racing."
+      - name: Checkered
+        value: 5
+        description: "Checkered flag."
+      - name: CoolDown
+        value: 6
+        description: "Cool down lap."
 
-  session_type:
+  SessionFlags:
+    type: flags
+    description: "Flags indicating the state of the session."
+    values:
+      - name: "checkered"
+        value: 0x00000001
+        description: "Checkered flag is being shown"
+      - name: "white"
+        value: 0x00000002
+        description: "White flag is being shown"
+      - name: "green"
+        value: 0x00000004
+        description: "Green flag is being shown"
+      - name: "yellow"
+        value: 0x00000008
+        description: "Yellow flag is being shown"
+      - name: "red"
+        value: 0x00000010
+        description: "Red flag is being shown"
+      - name: "blue"
+        value: 0x00000020
+        description: "Blue flag is being shown"
+      - name: "debris"
+        value: 0x00000040
+        description: "Debris flag is being shown"
+      - name: "crossed"
+        value: 0x00000080
+        description: "Crossed flags are being shown"
+      - name: "yellowWaving"
+        value: 0x00000100
+        description: "Waving yellow flag is being shown"
+      - name: "oneLapToGreen"
+        value: 0x00000200
+        description: "One lap until green flag"
+      - name: "greenHeld"
+        value: 0x00000400
+        description: "Green flag is being held"
+      - name: "tenToGo"
+        value: 0x00000800
+        description: "Ten laps to go"
+      - name: "fiveToGo"
+        value: 0x00001000
+        description: "Five laps to go"
+      - name: "randomWaving"
+        value: 0x00002000
+        description: "Random waving flags"
+      - name: "caution"
+        value: 0x00004000
+        description: "Caution flag is being shown"
+      - name: "cautionWaving"
+        value: 0x00008000
+        description: "Waving caution flag is being shown"
+      - name: "black"
+        value: 0x00010000
+        description: "Black flag is being shown"
+      - name: "disqualify"
+        value: 0x00020000
+        description: "Disqualification flag is being shown"
+      - name: "servicible"
+        value: 0x00040000
+        description: "Car is serviceable"
+      - name: "furled"
+        value: 0x00080000
+        description: "Furled flag is being shown"
+      - name: "repair"
+        value: 0x00100000
+        description: "Car needs repair"
+      - name: "startReady"
+        value: 0x00400000
+        description: "Start is ready"
+      - name: "startSet"
+        value: 0x00800000
+        description: "Start is set"
+      - name: "startGo"
+        value: 0x01000000
+        description: "Start is go"
+
+  TrackLocation:
     type: enum
-    description: "Session type"
+    description: "Location of the car on the track."
     values:
-      - name: Practice
+      - name: "NotInWorld"
+        value: -1
+        description: "Car is not in the world."
+      - name: "OffTrack"
         value: 0
-        description: "Practice session"
-      - name: Qualifying
+        description: "Car is off track."
+      - name: "OnTrack"
         value: 1
-        description: "Qualifying session"
-      - name: Race
+        description: "Car is on track."
+      - name: "ApproachingPits"
         value: 2
-        description: "Race session"
+        description: "Car is approaching the pits."
+      - name: "OnPitRoad"
+        value: 3
+        description: "Car is on pit road."
 
-  vector3:
-    type: struct
-    description: "3D vector measurement"
+session:
+  header:
     fields:
-      - name: x
-        type: float32
-        description: "X component"
-        unit: "meters"
-      - name: y
-        type: float32
-        description: "Y component"
-        unit: "meters"
-      - name: z
-        type: float32
-        description: "Z component"
-        unit: "meters"
+      - name: SessionId
+        type: int32
+        description: "Unique identifier for the session"
+        tags: ["session"]
 
-  wheel_data:
-    type: struct
-    description: "Combined wheel sensor data"
+      - name: SessionNum
+        type: int32
+        description: "Session number within the event"
+        tags: ["session"]
+
+  footer:
     fields:
-      - name: temperature
+      - name: FinalPosition
+        type: int32
+        description: "Final finishing position in the session"
+        tags: ["result", "summary"]
+
+      - name: FastestLapTime
         type: float32
-        description: "Tire surface temperature"
-        unit: "celsius"
-      - name: pressure
+        description: "Fastest lap time achieved in the session"
+        unit: "seconds"
+        tags: ["lap", "summary"]
+
+      - name: AverageLapTime
         type: float32
-        description: "Tire pressure"
-        unit: "kpa"
-      - name: vertical_load
-        type: float32
-        description: "Vertical load on tire"
-        unit: "newtons"
-      - name: camber
-        type: float32
-        description: "Dynamic camber angle"
-        unit: "degrees"
-      - name: rotation_speed
-        type: float32
-        description: "Wheel rotation speed"
-        unit: "rpm"
+        description: "Average lap time across all completed laps"
+        unit: "seconds"
+        tags: ["lap", "summary"]
 
-  engine_temps:
-    type: struct
-    description: "Engine temperature sensors"
-    fields:
-      - name: coolant_temps
-        type: float32
-        dimensions: 4
-        description: "Coolant temperatures at different points"
-        unit: "celsius"
-      - name: oil_temp
-        type: float32
-        description: "Engine oil temperature"
-        unit: "celsius"
-      - name: intake_temp
-        type: float32
-        description: "Intake air temperature"
-        unit: "celsius"
+frame:
+  fields:
+    - name: SessionState
+      type: SessionState
+      description: "Current state of the session"
+      tags: ["session"]
 
-channels:
-  - name: timestamp
-    type: uint64
-    description: "Microseconds since session start"
-    unit: "us"
-    tags: ["required"]
+    - name: SessionTime
+      type: float64
+      description: "Current session time in seconds"
+      tags: ["session"]
 
-  - name: position
-    type: vector3
-    description: "Vehicle position in track coordinates"
-    tags: ["position", "critical"]
+    - name: Flags
+      type: SessionFlags
+      description: "Current session flags"
+      tags: ["session"]
 
-  - name: velocity
-    type: vector3
-    description: "Vehicle velocity vector"
-    unit: "meters_per_second"
-    tags: ["velocity", "critical"]
+    - name: Brake
+      type: float32
+      description: "Brake pedal position (0.0 to 1.0)"
+      tags: ["inputs"]
 
-  - name: acceleration
-    type: vector3
-    description: "Vehicle acceleration vector"
-    unit: "meters_per_second_squared"
-    tags: ["acceleration", "critical"]
+    - name: Throttle
+      type: float32
+      description: "Throttle pedal position (0.0 to 1.0)"
+      tags: ["inputs"]
 
-  - name: orientation
-    type: vector3
-    description: "Vehicle orientation (roll, pitch, yaw)"
-    unit: "degrees"
-    tags: ["orientation"]
+    - name: Clutch
+      type: float32
+      description: "Clutch pedal position (0.0 to 1.0)"
+      tags: ["inputs"]
 
-  - name: angular_velocity
-    type: vector3
-    description: "Angular velocity (roll, pitch, yaw rates)"
-    unit: "degrees_per_second"
-    tags: ["angular_rate"]
+    - name: Gear
+      type: int32
+      description: "Current gear (-1=reverse, 0=neutral, 1+=forward gears)"
+      tags: ["inputs"]
 
-  - name: wheels
-    type: wheel_data
-    dimensions: 4
-    description: "Data for all wheels [FL, FR, RL, RR]"
-    tags: ["wheels", "critical"]
+    - name: SteeringWheelAngle
+      type: float32
+      description: "Steering wheel angle in radians"
+      tags: ["inputs"]
 
-  - name: engine_speed
-    type: uint16
-    description: "Engine RPM"
-    unit: "rpm"
-    tags: ["engine", "critical", "display"]
+    - name: AirTemperature
+      type: float32
+      description: "Ambient air temperature"
+      unit: "celsius"
+      tags: ["environment"]
 
-  - name: engine_temperature
-    type: engine_temps
-    description: "Engine temperature sensor array"
-    tags: ["engine", "temperature"]
+    - name: TrackTemperature
+      type: float32
+      description: "Track surface temperature"
+      unit: "celsius"
+      tags: ["environment"]
 
-  - name: throttle_position
-    type: float32
-    description: "Throttle pedal position"
-    unit: "percent"
-    tags: ["pedals", "display"]
+    - name: Skies
+      type: int32
+      description: "Sky condition (0=clear, 1=partly cloudy, 2=mostly cloudy, 3=overcast)"
+      tags: ["environment"]
 
-  - name: brake_pressure
-    type: float32
-    description: "Brake system pressure"
-    unit: "kpa"
-    tags: ["brakes", "critical"]
+    - name: Precipitation
+      type: float32
+      description: "Precipitation level at start/finish line (0.0 to 1.0)"
+      tags: ["environment"]
 
-  - name: steering_angle
-    type: float32
-    description: "Steering wheel angle"
-    unit: "degrees"
-    tags: ["steering", "display"]
+    - name: TrackWetness
+      type: int32
+      description: "Track wetness level (0=dry to 5=very wet)"
+      tags: ["environment"]
 
-  - name: gear
-    type: uint8
-    description: "Current gear (0=neutral)"
-    tags: ["transmission", "display"]
+    - name: TrackLocation
+      type: TrackLocation
+      description: "Current location of the car relative to the track"
+      tags: ["environment"]
 
-  - name: lap_number
-    type: uint16
-    description: "Current lap number"
-    tags: ["lap", "display"]
+    - name: Speed
+      type: float32
+      description: "Current vehicle speed"
+      unit: "meters_per_second"
+      tags: ["outputs"]
 
-  - name: lap_time
-    type: uint32
-    description: "Current lap time"
-    unit: "ms"
-    tags: ["lap", "display"]
+    - name: Rpm
+      type: float32
+      description: "Current engine RPM"
+      unit: "rpm"
+      tags: ["outputs"]
 
-  - name: oil_pressure
-    type: float32
-    description: "Engine oil pressure"
-    unit: "kpa"
-    tags: ["engine", "critical"]
+    - name: ZeroRpm
+      type: float32
+      description: "Engine RPM at idle"
+      unit: "rpm"
+      tags: ["outputs"]
 
-  - name: fuel_pressure
-    type: float32
-    description: "Fuel rail pressure"
-    unit: "kpa"
-    tags: ["fuel"]
+    - name: CurrentLap
+      type: int32
+      description: "Current lap number"
+      tags: ["lap"]
 
-  - name: fuel_level
-    type: float32
-    description: "Fuel tank level"
-    unit: "liters"
-    tags: ["fuel", "critical", "display"]
+    - name: LapsCompleted
+      type: int32
+      description: "Total number of completed laps"
+      tags: ["lap"]
+
+    - name: LapDistPct
+      type: float32
+      description: "Percentage of current lap completed (0.0 to 1.0)"
+      tags: ["lap"]
+
+    - name: LapDist
+      type: float32
+      description: "Distance traveled in current lap"
+      unit: "meters"
+      tags: ["lap"]
+
+    - name: CurrentLapTime
+      type: float32
+      description: "Time elapsed in current lap"
+      unit: "seconds"
+      tags: ["lap"]
+
+    - name: LastLapTime
+      type: float32
+      description: "Time of the last completed lap"
+      unit: "seconds"
+      tags: ["lap"]
+
+    - name: BestLapTime
+      type: float32
+      description: "Best lap time in the session"
+      unit: "seconds"
+      tags: ["lap"]
+
+    - name: OnJokerLap
+      type: bool
+      description: "Whether currently completing a joker lap"
+      tags: ["status"]
+
+    - name: PitStopActive
+      type: bool
+      description: "Whether the car is currently receiving pit service"
+      tags: ["status"]
+
+    - name: OnPitRoad
+      type: bool
+      description: "Whether the car is on pit road between the cones"
+      tags: ["status"]
+
+    - name: TowTime
+      type: float32
+      description: "Time remaining for towing (greater than zero if being towed)"
+      unit: "seconds"
+      tags: ["status"]
+
+    - name: TireCompound
+      type: int32
+      description: "Current tire compound index"
+      tags: ["status"]
+
+    - name: PushToPassEngaged
+      type: bool
+      description: "Whether push-to-pass is currently engaged"
+      tags: ["status"]
+
+    - name: FuelLevel
+      type: float32
+      description: "Current fuel level"
+      unit: "liters"
+      tags: ["fuel"]
+
+    - name: FuelLevelPercent
+      type: float32
+      description: "Current fuel level as a percentage of capacity (0.0 to 1.0)"
+      tags: ["fuel"]
+
+    - name: IncidentPoints
+      type: int32
+      description: "Total incident points accumulated in the session"
+      tags: ["status"]

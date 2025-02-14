@@ -171,17 +171,17 @@ frame_time = session_timestamp + (tick_count * (1_000_000 / sample_rate))
 
 ### Frame Layout Format
 
-| Component      | Size     | Description               |
-| -------------- | -------- | ------------------------- |
-| Frame Header   | 8        | Frame tick count          |
-| Channel Values | Varies   | Sequential channel values |
-| Padding        | Variable | Ensures 8-byte alignment  |
+| Section      | Size   | Description             |
+| ------------ | ------ | ----------------------- |
+| Header       | Varies | Session header data     |
+| Frame Values | Varies | Sequential frame values |
+| Footer       | Varies | Session footer data     |
 
-Frame size is fixed and determined by:
+The total size of a frame is determined by:
 
-1. 8 bytes for frame header
-2. Sum of all channel sizes
-3. Padding to maintain 8-byte alignment
+1. Size of the header
+2. Sum of all field sizes
+3. Size of the footer
 
 ## 7. Data Types
 
@@ -199,7 +199,8 @@ Frame size is fixed and determined by:
 | 9     | float64 | 8            | 64-bit IEEE 754 floating point             |
 | 10    | bool    | 1            | Boolean value (0 = false, non-zero = true) |
 | 11    | struct  | varies       | Composite type containing multiple fields  |
-| 12    | enum    | 4            | Enumeration (uint32 backing type)          |
+| 12    | enum    | 4            | Enumeration (int32 backing type)           |
+| 13    | flags   | 8            | Bit flags (uint64 backing type)            |
 
 ## 8. Alignment Rules
 
@@ -249,4 +250,4 @@ Frame size is fixed and determined by:
 
 ## 10. Example Structures
 
-See channel schema documentation for examples of common telemetry structures and channel definitions.
+See frame schema documentation for examples of common telemetry structures and field definitions.

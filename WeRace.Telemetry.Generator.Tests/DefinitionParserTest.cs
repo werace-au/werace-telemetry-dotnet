@@ -22,24 +22,43 @@ public class DefinitionParserTests
   public void Parse_ValidMinimalDefinition_ReturnsDefinition()
   {
     // Arrange
-    var yaml = LoadFixture("valid-minimal");
+    var yaml = """
+               version: "1.0"
+               metadata:
+                 title: "Test"
+                 description: "Test"
+               types: {}
+               session:
+                 header:
+                   fields:
+                     - name: type
+                       type: uint32
+                       dimensions: 0
+                       description: "Session type"
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
+               """;
 
     // Act
     var definition = _parser.Parse(yaml);
 
     // Assert
-    definition.Should().NotBeNull();
     definition.Version.Should().Be("1.0");
-    definition.Metadata.Title.Should().Be("Test Telemetry");
+    definition.Metadata.Title.Should().Be("Test");
+    definition.Metadata.Description.Should().Be("Test");
     definition.Types.Should().BeEmpty();
-    definition.Channels.Should().HaveCount(1);
 
-    var channel = definition.Channels[0];
-    channel.Name.Should().Be("timestamp");
-    channel.Type.Should().Be("uint64");
-    channel.Dimensions.Should().Be(0);
-    channel.Description.Should().Be("Timestamp");
-    channel.Tags.Should().Equal("required");
+    var field = definition.Frame.Fields[0];
+    field.Name.Should().Be("timestamp");
+    field.Type.Should().Be("uint64");
+    field.Dimensions.Should().Be(0);
+    field.Description.Should().Be("Timestamp");
+    field.Tags.Should().Equal("required");
   }
 
   [Fact]
@@ -56,8 +75,8 @@ public class DefinitionParserTests
     var vector3 = definition.Types["vector3"];
     vector3.Fields.Should().HaveCount(3);
 
-    var channel = definition.Channels[0];
-    channel.Type.Should().Be("vector3");
+    var field = definition.Frame.Fields[0];
+    field.Type.Should().Be("vector3");
   }
 
   [Fact]
@@ -85,15 +104,14 @@ public class DefinitionParserTests
     var definition = _parser.Parse(yaml);
 
     // Assert
-    // Assert
     definition.Types.Should().ContainKey("sensor_readings");
     var sensorType = definition.Types["sensor_readings"];
     var tempField = sensorType.Fields[0];
     tempField.Dimensions.Should().Be(4);
     tempField.Unit.Should().Be("celsius");
 
-    var channel = definition.Channels[0];
-    channel.Dimensions.Should().Be(2);
+    var frameField = definition.Frame.Fields[0];
+    frameField.Dimensions.Should().Be(2);
   }
 
   [Theory]
@@ -108,12 +126,20 @@ public class DefinitionParserTests
                   title: "Test"
                   description: "Test"
                 types: {EmptyMap}
-                channels:
-                  - name: timestamp
-                    type: uint64
-                    dimensions: 0
-                    description: "Timestamp"
-                    tags: []
+                session:
+                  header:
+                    fields:
+                      - name: type
+                        type: uint32
+                        dimensions: 0
+                        description: "Session type"
+                frame:
+                  fields:
+                    - name: timestamp
+                      type: uint64
+                      dimensions: 0
+                      description: "Timestamp"
+                      tags: ["required"]
                 """;
 
     // Act & Assert
@@ -133,13 +159,20 @@ public class DefinitionParserTests
                   title: {(title == null ? "~" : $"\"{title}\"")}
                   description: "Test"
                 types: {EmptyMap}
-                channels:
-                  - name: timestamp
-                    type: uint64
-                    dimensions: 0
-                    description: "Timestamp"
-                    group: "timing"
-                    tags: []
+                session:
+                  header:
+                    fields:
+                      - name: type
+                        type: uint32
+                        dimensions: 0
+                        description: "Session type"
+                frame:
+                  fields:
+                    - name: timestamp
+                      type: uint64
+                      dimensions: 0
+                      description: "Timestamp"
+                      tags: ["required"]
                 """;
 
     // Act & Assert
@@ -184,20 +217,24 @@ public class DefinitionParserTests
                   description: "Test"
                 types: {EmptyMap}
                 session:
-                  description: "Test session"
                   header:
-                    description: "Session header"
                     fields:
                       - name: type
                         type: uint32
                         dimensions: 0
                         description: "Session type"
-                channels:
-                  - name: test
-                    type: {type}
-                    dimensions: 0
-                    description: "Test channel"
-                    tags: []
+                frame:
+                  fields:
+                    - name: timestamp
+                      type: uint64
+                      dimensions: 0
+                      description: "Timestamp"
+                      tags: ["required"]
+                    - name: test
+                      type: {type}
+                      dimensions: 0
+                      description: "Test channel"
+                      tags: []
                 """;
 
     // Act & Assert
@@ -216,9 +253,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -238,12 +273,13 @@ public class DefinitionParserTests
                      - name: Error
                        value: 2
                        description: "Error message"
-               channels:
-                 - name: log_severity
-                   type: log_level
-                   dimensions: 0
-                   description: "Current log level"
-                   tags: []
+               frame:
+                 fields:
+                   - name: log_severity
+                     type: log_level
+                     dimensions: 0
+                     description: "Current log level"
+                     tags: []
                """;
 
     // Act
@@ -257,13 +293,12 @@ public class DefinitionParserTests
 
     var debugValue = enumType.Values[0];
     debugValue.Name.Should().Be("Debug");
-    debugValue.Value.Should().Be(0u);
+    debugValue.Value.Should().Be(0);
     debugValue.Description.Should().Be("Debug message");
 
-    var channel = definition.Channels[0];
-    channel.Type.Should().Be("log_level");
+    var field = definition.Frame.Fields[0];
+    field.Type.Should().Be("log_level");
   }
-
 
   [Fact]
   public void Parse_EnumWithDuplicateNames_ThrowsException()
@@ -275,9 +310,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -294,7 +327,13 @@ public class DefinitionParserTests
                      - name: Debug
                        value: 1
                        description: "Another debug"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -313,9 +352,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -332,7 +369,13 @@ public class DefinitionParserTests
                      - name: Info
                        value: 0
                        description: "Info message"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -351,9 +394,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -364,7 +405,13 @@ public class DefinitionParserTests
                    type: enum
                    description: "Log levels"
                    values: []
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -383,9 +430,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -399,7 +444,13 @@ public class DefinitionParserTests
                      - name: ""
                        value: 0
                        description: "Empty name"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -418,9 +469,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -434,7 +483,13 @@ public class DefinitionParserTests
                      - name: Debug
                        value: 0
                        description: ""
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -453,9 +508,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -473,7 +526,13 @@ public class DefinitionParserTests
                      - name: extra
                        type: uint32
                        description: "Extra field"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -492,9 +551,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -508,7 +565,13 @@ public class DefinitionParserTests
                      - name: "   "
                        value: 0
                        description: "Invalid name"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -527,9 +590,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -556,12 +617,13 @@ public class DefinitionParserTests
                      - name: timestamp
                        type: uint64
                        description: "Entry timestamp"
-               channels:
-                 - name: current_log
-                   type: log_entry
-                   dimensions: 0
-                   description: "Current log entry"
-                   tags: []
+               frame:
+                 fields:
+                   - name: current_log
+                     type: log_entry
+                     dimensions: 0
+                     description: "Current log entry"
+                     tags: []
                """;
 
     // Act
@@ -585,9 +647,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -604,21 +664,22 @@ public class DefinitionParserTests
                      - name: Error
                        value: 1
                        description: "Error status"
-               channels:
-                 - name: status_history
-                   type: status_code
-                   dimensions: 10
-                   description: "Historical status codes"
-                   tags: []
+               frame:
+                 fields:
+                   - name: status_history
+                     type: status_code
+                     dimensions: 10
+                     description: "Historical status codes"
+                     tags: []
                """;
 
     // Act
     var definition = _parser.Parse(yaml);
 
     // Assert
-    var channel = definition.Channels[0];
-    channel.Type.Should().Be("status_code");
-    channel.Dimensions.Should().Be(10);
+    var field = definition.Frame.Fields[0];
+    field.Type.Should().Be("status_code");
+    field.Dimensions.Should().Be(10);
   }
 
   [Fact]
@@ -631,9 +692,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -654,7 +713,18 @@ public class DefinitionParserTests
                      - name: Ok
                        value: 0
                        description: "Ok status"
-               channels: []
+               frame:
+                 fields:
+                   - name: log_level
+                     type: log_level
+                     dimensions: 0
+                     description: "Current log level"
+                     tags: []
+                   - name: status
+                     type: status_code
+                     dimensions: 0
+                     description: "Current status"
+                     tags: []
                """;
 
     // Act
@@ -686,7 +756,20 @@ public class DefinitionParserTests
                       - name: Debug
                         value: 0
                         description: "{description}"
-                channels: []
+                session:
+                  header:
+                    fields:
+                      - name: type
+                        type: uint32
+                        dimensions: 0
+                        description: "Session type"
+                frame:
+                  fields:
+                    - name: timestamp
+                      type: uint64
+                      dimensions: 0
+                      description: "Timestamp"
+                      tags: ["required"]
                 """;
 
     // Act & Assert
@@ -696,7 +779,7 @@ public class DefinitionParserTests
   }
 
   [Fact]
-  public void Parse_UndefinedEnumTypeInChannel_ThrowsException()
+  public void Parse_UndefinedEnumTypeInFrame_ThrowsException()
   {
     // Arrange
     var yaml = """
@@ -705,21 +788,25 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
                        dimensions: 0
                        description: "Session type"
                types: {}
-               channels:
-                 - name: status
-                   type: undefined_enum
-                   dimensions: 0
-                   description: "Status"
-                   tags: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
+                   - name: status
+                     type: undefined_enum
+                     dimensions: 0
+                     description: "Status"
+                     tags: []
                """;
 
     // Act & Assert
@@ -738,9 +825,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -757,13 +842,25 @@ public class DefinitionParserTests
                      - name: "Info  Level"
                        value: 1
                        description: "Info  level  message"
-               channels: []
+               frame:
+                 fields:
+                   - name: log_level
+                     type: log_level
+                     dimensions: 0
+                     description: "Current log level"
+                     tags: ["required"]
                """;
 
     // Act
     var definition = _parser.Parse(yaml);
 
     // Assert
+    var field = definition.Frame.Fields[0];
+    field.Type.Should().Be("log_level");
+    field.Name.Should().Be("log_level");
+    field.Description.Should().Be("Current log level");
+    field.Tags.Should().Equal("required");
+
     var enumType = definition.Types["log_level"];
     enumType.Values[0].Name.Should().Be("Debug Level");
     enumType.Values[1].Name.Should().Be("Info  Level");
@@ -779,9 +876,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -825,12 +920,13 @@ public class DefinitionParserTests
                      - name: bool_val
                        type: bool
                        description: "bool value"
-               channels:
-                 - name: test
-                   type: primitives
-                   dimensions: 0
-                   description: "Test channel"
-                   tags: []
+               frame:
+                 fields:
+                   - name: test
+                     type: primitives
+                     dimensions: 0
+                     description: "Test channel"
+                     tags: []
                """;
 
     // Act
@@ -851,9 +947,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -886,12 +980,13 @@ public class DefinitionParserTests
                      - name: scale
                        type: vector3
                        description: "Scale"
-               channels:
-                 - name: object_transform
-                   type: transform
-                   dimensions: 0
-                   description: "Object transform"
-                   tags: []
+               frame:
+                 fields:
+                   - name: object_transform
+                     type: transform
+                     dimensions: 0
+                     description: "Object transform"
+                     tags: []
                """;
 
     // Act
@@ -913,9 +1008,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -943,12 +1036,13 @@ public class DefinitionParserTests
                      - name: color
                        type: uint32
                        description: "Color"
-               channels:
-                 - name: polygons
-                   type: polygon
-                   dimensions: 10
-                   description: "Array of polygons"
-                   tags: []
+               frame:
+                 fields:
+                   - name: polygons
+                     type: polygon
+                     dimensions: 10
+                     description: "Array of polygons"
+                     tags: []
                """;
 
     // Act
@@ -958,8 +1052,8 @@ public class DefinitionParserTests
     var polygon = definition.Types["polygon"];
     polygon.Fields[0].Dimensions.Should().Be(4);
 
-    var channel = definition.Channels[0];
-    channel.Dimensions.Should().Be(10);
+    var field = definition.Frame.Fields[0];
+    field.Dimensions.Should().Be(10);
   }
 
   [Fact]
@@ -972,9 +1066,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -988,7 +1080,13 @@ public class DefinitionParserTests
                      - name: field
                        type: nonexistent_type
                        description: "Invalid field"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -1007,9 +1105,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -1024,7 +1120,13 @@ public class DefinitionParserTests
                        type: float32
                        dimensions: -1
                        description: "Coordinates"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -1043,9 +1145,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -1056,7 +1156,13 @@ public class DefinitionParserTests
                    type: struct
                    description: "Empty struct"
                    fields: []
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -1075,9 +1181,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -1100,12 +1204,14 @@ public class DefinitionParserTests
                        type: float32
                        description: "Humidity reading"
                        unit: "percent"
-               channels:
-                 - name: sensor_readings
-                   type: sensor_data
-                   description: "Sensor data"
-                   unit: "combined"
-                   tags: ["sensor"]
+               frame:
+                 fields:
+                   - name: sensor_readings
+                     type: sensor_data
+                     dimensions: 0
+                     description: "Sensor data"
+                     unit: "combined"
+                     tags: ["sensor"]
                """;
 
     // Act
@@ -1117,8 +1223,9 @@ public class DefinitionParserTests
     sensorData.Fields[1].Unit.Should().Be("pascal");
     sensorData.Fields[2].Unit.Should().Be("percent");
 
-    var channel = definition.Channels[0];
-    channel.Unit.Should().Be("combined");
+    var field = definition.Frame.Fields[0];
+    field.Type.Should().Be("sensor_data");
+    field.Unit.Should().Be("combined");
   }
 
   [Fact]
@@ -1131,9 +1238,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -1147,7 +1252,13 @@ public class DefinitionParserTests
                      - name: ""
                        type: float32
                        description: "Empty field name"
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -1166,9 +1277,7 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
@@ -1179,7 +1288,6 @@ public class DefinitionParserTests
                        dimensions: 0
                        description: "Driver ID"
                  footer:
-                   description: "Session footer"
                    fields:
                      - name: total_laps
                        type: uint32
@@ -1190,27 +1298,29 @@ public class DefinitionParserTests
                        dimensions: 0
                        description: "Best lap time"
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act
     var definition = _parser.Parse(yaml);
 
     // Assert
-    definition.Session.Description.Should().Be("Test session");
-
     // Verify header
-    definition.Session.Header.Description.Should().Be("Session header");
     definition.Session.Header.Fields.Should().HaveCount(2);
     definition.Session.Header.Fields[0].Name.Should().Be("type");
     definition.Session.Header.Fields[1].Name.Should().Be("driver_id");
 
     // Verify footer
     definition.Session.Footer.Should().NotBeNull();
-    definition.Session.Footer!.Description.Should().Be("Session footer");
-    definition.Session.Footer.Fields.Should().HaveCount(2);
-    definition.Session.Footer.Fields[0].Name.Should().Be("total_laps");
-    definition.Session.Footer.Fields[1].Name.Should().Be("best_lap_time");
+    definition.Session.Footer?.Fields.Should().HaveCount(2);
+    definition.Session.Footer?.Fields[0].Name.Should().Be("total_laps");
+    definition.Session.Footer?.Fields[1].Name.Should().Be("best_lap_time");
   }
 
   [Fact]
@@ -1223,24 +1333,26 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
                        dimensions: 0
                        description: "Session type"
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act
     var definition = _parser.Parse(yaml);
 
     // Assert
-    definition.Session.Description.Should().Be("Test session");
-    definition.Session.Header.Description.Should().Be("Session header");
     definition.Session.Header.Fields.Should().HaveCount(1);
     definition.Session.Footer.Should().BeNull();
   }
@@ -1255,18 +1367,22 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields: []
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
     var action = () => _parser.Parse(yaml);
     action.Should().Throw<ParseException>()
-      .WithMessage("*Session header must have at least one field*");
+      .WithMessage("*must have at least one field*");
   }
 
   [Fact]
@@ -1279,88 +1395,28 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
                        dimensions: 0
                        description: "Session type"
                  footer:
-                   description: "Session footer"
                    fields: []
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
     var action = () => _parser.Parse(yaml);
     action.Should().Throw<ParseException>()
       .WithMessage("*Session footer must have at least one field*");
-  }
-
-  [Fact]
-  public void Parse_SessionWithEmptyHeaderDescription_ThrowsException()
-  {
-    // Arrange
-    var yaml = """
-               version: "1.0"
-               metadata:
-                 title: "Test"
-                 description: "Test"
-               session:
-                 description: "Test session"
-                 header:
-                   description: ""
-                   fields:
-                     - name: type
-                       type: uint32
-                       dimensions: 0
-                       description: "Session type"
-               types: {}
-               channels: []
-               """;
-
-    // Act & Assert
-    var action = () => _parser.Parse(yaml);
-    action.Should().Throw<ParseException>()
-      .WithMessage("*Header description cannot be empty*");
-  }
-
-  [Fact]
-  public void Parse_SessionWithEmptyFooterDescription_ThrowsException()
-  {
-    // Arrange
-    var yaml = """
-               version: "1.0"
-               metadata:
-                 title: "Test"
-                 description: "Test"
-               session:
-                 description: "Test session"
-                 header:
-                   description: "Session header"
-                   fields:
-                     - name: type
-                       type: uint32
-                       dimensions: 0
-                       description: "Session type"
-                 footer:
-                   description: ""
-                   fields:
-                     - name: total_laps
-                       type: uint32
-                       dimensions: 0
-                       description: "Total laps"
-               types: {}
-               channels: []
-               """;
-
-    // Act & Assert
-    var action = () => _parser.Parse(yaml);
-    action.Should().Throw<ParseException>()
-      .WithMessage("*Footer description cannot be empty*");
   }
 
   [Fact]
@@ -1373,16 +1429,20 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: invalid_type
                        dimensions: 0
                        description: "Session type"
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert
@@ -1401,23 +1461,26 @@ public class DefinitionParserTests
                  title: "Test"
                  description: "Test"
                session:
-                 description: "Test session"
                  header:
-                   description: "Session header"
                    fields:
                      - name: type
                        type: uint32
                        dimensions: 0
                        description: "Session type"
                  footer:
-                   description: "Session footer"
                    fields:
                      - name: total_laps
                        type: invalid_type
                        dimensions: 0
                        description: "Total laps"
                types: {}
-               channels: []
+               frame:
+                 fields:
+                   - name: timestamp
+                     type: uint64
+                     dimensions: 0
+                     description: "Timestamp"
+                     tags: ["required"]
                """;
 
     // Act & Assert

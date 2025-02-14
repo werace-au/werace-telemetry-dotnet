@@ -6,7 +6,6 @@ metadata:
   source_version: "1.0.0"
 types: {}
 session:
-  description: "Test session"
   fields:
     - name: type
       type: uint32

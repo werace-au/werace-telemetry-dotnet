@@ -1,207 +1,128 @@
 version: "1.0"
+
 metadata:
-  title: "Formula Race Car Telemetry"
-  description: "Complete telemetry channel set for formula race car"
+  title: "Example Telemetry"
+  description: "Example telemetry definition"
 
 types:
   vector3:
     type: struct
-    description: "3D vector measurement"
+    description: "3D vector"
     fields:
       - name: x
         type: float32
-        description: "X component"
+        dimensions: 0
+        description: "X coordinate"
         unit: "meters"
       - name: y
         type: float32
-        description: "Y component"
+        dimensions: 0
+        description: "Y coordinate"
         unit: "meters"
       - name: z
         type: float32
-        description: "Z component"
+        dimensions: 0
+        description: "Z coordinate"
         unit: "meters"
 
   wheel_data:
     type: struct
-    description: "Combined wheel sensor data"
+    description: "Wheel sensor data"
     fields:
       - name: temperature
         type: float32
+        dimensions: 0
         description: "Tire surface temperature"
         unit: "celsius"
+        tags: ["temperature", "critical"]
       - name: pressure
         type: float32
+        dimensions: 0
         description: "Tire pressure"
         unit: "kpa"
-      - name: vertical_load
-        type: float32
-        description: "Vertical load on tire"
-        unit: "newtons"
-      - name: camber
-        type: float32
-        description: "Dynamic camber angle"
-        unit: "degrees"
-      - name: rotation_speed
-        type: float32
-        description: "Wheel rotation speed"
-        unit: "rpm"
+        tags: ["pressure", "critical"]
 
-  engine_temps:
-    type: struct
-    description: "Engine temperature sensors"
-    fields:
-      - name: coolant_temps
-        type: float32
-        dimensions: 4
-        description: "Coolant temperatures at different points"
-        unit: "celsius"
-      - name: oil_temp
-        type: float32
-        description: "Engine oil temperature"
-        unit: "celsius"
-      - name: intake_temp
-        type: float32
-        description: "Intake air temperature"
-        unit: "celsius"
+  gear_state:
+    type: enum
+    description: "Transmission gear state"
+    values:
+      - name: neutral
+        value: 0
+        description: "Transmission in neutral"
+      - name: first
+        value: 1
+        description: "First gear"
+      - name: second
+        value: 2
+        description: "Second gear"
+      - name: third
+        value: 3
+        description: "Third gear"
+      - name: fourth
+        value: 4
+        description: "Fourth gear"
+      - name: fifth
+        value: 5
+        description: "Fifth gear"
+      - name: sixth
+        value: 6
+        description: "Sixth gear"
+      - name: reverse
+        value: 7
+        description: "Reverse gear"
 
 session:
-  description: "Race session information"
   header:
-    description: "Session header data"
     fields:
       - name: type
         type: uint32
         dimensions: 0
-        description: "Session type (0=practice, 1=qualifying, 2=race)"
+        description: "Session type identifier"
         tags: ["metadata"]
-
       - name: driver_id
         type: uint32
         dimensions: 0
         description: "Driver identifier"
         tags: ["metadata"]
-
-      - name: track_config
+  footer:
+    fields:
+      - name: best_lap_time
         type: uint32
         dimensions: 0
-        description: "Track configuration identifier"
-        tags: ["metadata"]
-
-      - name: ambient_temp
+        description: "Best lap time in session"
+        unit: "ms"
+        tags: ["lap", "summary"]
+      - name: total_laps
+        type: uint32
+        dimensions: 0
+        description: "Total laps completed"
+        tags: ["lap", "summary"]
+      - name: fuel_used
         type: float32
         dimensions: 0
-        description: "Ambient temperature at session start"
-        unit: "celsius"
-        tags: ["weather"]
+        description: "Total fuel used in session"
+        unit: "liters"
+        tags: ["fuel", "summary"]
 
-      - name: track_temp
-        type: float32
-        dimensions: 0
-        description: "Track temperature at session start"
-        unit: "celsius"
-        tags: ["weather"]
-
-channels:
-  - name: timestamp
-    type: uint64
-    description: "Microseconds since session start"
-    unit: "us"
-    tags: ["required"]
-
-  - name: position
-    type: vector3
-    description: "Vehicle position in track coordinates"
-    tags: ["position", "critical"]
-
-  - name: velocity
-    type: vector3
-    description: "Vehicle velocity vector"
-    unit: "meters_per_second"
-    tags: ["velocity", "critical"]
-
-  - name: acceleration
-    type: vector3
-    description: "Vehicle acceleration vector"
-    unit: "meters_per_second_squared"
-    tags: ["acceleration", "critical"]
-
-  - name: orientation
-    type: vector3
-    description: "Vehicle orientation (roll, pitch, yaw)"
-    unit: "degrees"
-    tags: ["orientation"]
-
-  - name: angular_velocity
-    type: vector3
-    description: "Angular velocity (roll, pitch, yaw rates)"
-    unit: "degrees_per_second"
-    tags: ["angular_rate"]
-
-  - name: wheels
-    type: wheel_data
-    dimensions: 4
-    description: "Data for all wheels [FL, FR, RL, RR]"
-    tags: ["wheels", "critical"]
-
-  - name: engine_speed
-    type: uint16
-    description: "Engine RPM"
-    unit: "rpm"
-    tags: ["engine", "critical", "display"]
-
-  - name: engine_temperature
-    type: engine_temps
-    description: "Engine temperature sensor array"
-    tags: ["engine", "temperature"]
-
-  - name: throttle_position
-    type: float32
-    description: "Throttle pedal position"
-    unit: "percent"
-    tags: ["pedals", "display"]
-
-  - name: brake_pressure
-    type: float32
-    description: "Brake system pressure"
-    unit: "kpa"
-    tags: ["brakes", "critical"]
-
-  - name: steering_angle
-    type: float32
-    description: "Steering wheel angle"
-    unit: "degrees"
-    tags: ["steering", "display"]
-
-  - name: gear
-    type: uint8
-    description: "Current gear (0=neutral)"
-    tags: ["transmission", "display"]
-
-  - name: lap_number
-    type: uint16
-    description: "Current lap number"
-    tags: ["lap", "display"]
-
-  - name: lap_time
-    type: uint32
-    description: "Current lap time"
-    unit: "ms"
-    tags: ["lap", "display"]
-
-  - name: oil_pressure
-    type: float32
-    description: "Engine oil pressure"
-    unit: "kpa"
-    tags: ["engine", "critical"]
-
-  - name: fuel_pressure
-    type: float32
-    description: "Fuel rail pressure"
-    unit: "kpa"
-    tags: ["fuel"]
-
-  - name: fuel_level
-    type: float32
-    description: "Fuel tank level"
-    unit: "liters"
-    tags: ["fuel", "critical", "display"]
+frame:
+  fields:
+    - name: position
+      type: vector3
+      dimensions: 0
+      description: "Vehicle position"
+      tags: ["position"]
+    - name: velocity
+      type: vector3
+      dimensions: 0
+      description: "Vehicle velocity"
+      tags: ["velocity"]
+    - name: wheels
+      type: wheel_data
+      dimensions: 4
+      description: "Data for all wheels [FL, FR, RL, RR]"
+      tags: ["wheels", "critical"]
+    - name: current_gear
+      type: gear_state
+      dimensions: 0
+      description: "Current transmission gear"
+      tags: ["transmission", "display"]

@@ -1,36 +1,42 @@
 version: "1.0"
+
 metadata:
-  title: "Complex Test"
-  description: "Test Description"
+  title: "Test Telemetry"
+  description: "Test telemetry definition"
+
 types:
   vector3:
-    description: "3D vector"
     type: struct
+    description: "3D vector"
     fields:
       - name: x
         type: float32
         dimensions: 0
-        description: "X component"
+        description: "X coordinate"
+        unit: "meters"
       - name: y
         type: float32
         dimensions: 0
-        description: "Y component"
+        description: "Y coordinate"
+        unit: "meters"
       - name: z
         type: float32
         dimensions: 0
-        description: "Z component"
+        description: "Z coordinate"
+        unit: "meters"
+
 session:
-  description: "Basic session information"
   header:
-    description: "Session header information"
     fields:
       - name: type
         type: uint32
         dimensions: 0
-        description: "Session type identifier"
-channels:
-  - name: position
-    type: vector3
-    dimensions: 0
-    description: "Position"
-    tags: ["required"]
+        description: "Session type"
+
+frame:
+  fields:
+    - name: position
+      type: vector3
+      dimensions: 0
+      description: "Position vector"
+      tags: ["position"]

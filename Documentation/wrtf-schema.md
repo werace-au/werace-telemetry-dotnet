@@ -1,4 +1,4 @@
-# WRTF Channel Definition Schema
+# WRTF Frame Definition Schema
 
 This document defines the schema for WRTF frame and session definitions.
 
@@ -6,10 +6,10 @@ This document defines the schema for WRTF frame and session definitions.
 
 The schema consists of four main sections:
 
-* Version information
-* Metadata
-* Type definitions
-* Frame definition
+- Version information
+- Metadata
+- Type definitions
+- Frame definition
 
 ## Schema Definition
 
@@ -17,27 +17,27 @@ The schema consists of four main sections:
 version: "1.0"
 
 metadata:
-  # Name of the channel set
-  title: string
-  # Description of the channel set
-  description: string
+  # Name of the telemetry definition
+  title: Example Telemetry Definition
+  # Description of the telemetry definition
+  description: This is an example telemetry definition for testing purposes
 
 # Optional common type definitions that can be referenced
 types:
   # Custom type identifier
   type_name:
     # Base type - one of:
-    # struct or enum
+    # struct, enum, or flags
     type: string
     # Description of the type
     description: string
 
-    # For enum types only:
+    # For enum and flags types only:
     values:
       - # Value name
         name: string
-        # Unsigned integer value
-        value: uint
+        # Integer value (int32 for enum, uint64 for flags)
+        value: int
         # Description of the value
         description: string
 
@@ -58,14 +58,9 @@ types:
 
 # Session definition
 session:
-  # Description of the session
-  description: string
-
   # Session header definition (required)
   header:
-    # Description of the session header data
-    description: string
-    # Session header field definitions
+    # Session header field definitions.
     fields:
       - # Field name
         name: string
@@ -82,9 +77,7 @@ session:
 
   # Session footer definition (optional)
   footer:
-    # Description of the session footer data
-    description: string
-    # Session footer field definitions
+    # Session footer field definitions. If the footer is present it must have at least one field.
     fields:
       - # Field name
         name: string
@@ -101,8 +94,6 @@ session:
 
 # Frame definition
 frame:
-  # Description of the frame data
-  description: string
   # Frame field definitions
   fields:
     - # Field name
@@ -122,6 +113,14 @@ frame:
 ## Example Usage
 
 ```yaml
+version: "1.0"
+
+metadata:
+  # Name of the telemetry definition
+  title: Example Telemetry Definition
+  # Description of the telemetry definition
+  description: This is an example telemetry definition for testing purposes
+
 types:
   gear_state:
     type: enum
@@ -156,10 +155,7 @@ types:
         tags: ["pressure", "critical"]
 
 session:
-  description: "Race session data"
-
   header:
-    description: "Session initialization data"
     fields:
       - name: type
         type: uint32
@@ -174,7 +170,6 @@ session:
         tags: ["metadata"]
 
   footer:
-    description: "Session summary information"
     fields:
       - name: best_lap_time
         type: uint32
@@ -197,7 +192,6 @@ session:
         tags: ["fuel", "summary"]
 
 frame:
-  description: "Telemetry frame data"
   fields:
     - name: wheels
       type: wheel_data
@@ -218,47 +212,56 @@ frame:
 
 #### Enum Types
 
-* Must have at least one value
-* All values must have unique names within the enum
-* All values must have unique numeric values
-* Cannot have fields defined
-* All value names and descriptions must be non-empty strings
+- Must have at least one value
+- All values must have unique names within the enum
+- All values must have unique numeric values
+- Cannot have fields defined
+- All value names and descriptions must be non-empty strings
+
+#### Flags Types
+
+- Must have at least one value
+- All values must have unique names within the flags type
+- All values must be positive powers of 2 (1, 2, 4, 8, etc.) or combinations thereof
+- Cannot have fields defined
+- All value names and descriptions must be non-empty strings
+- Maximum value must fit within uint64 (0 to 18,446,744,073,709,551,615)
 
 #### Struct Types
 
-* Must have at least one field
-* All fields must have valid types (primitive, enum, or struct)
-* All field names and descriptions must be non-empty strings
-* All field dimensions must be non-negative
+- Must have at least one field
+- All fields must have valid types (primitive, enum, or struct)
+- All field names and descriptions must be non-empty strings
+- All field dimensions must be non-negative
 
 ### Session Rules
 
-* Session must have a description
-* Session header is required and must have at least one field
-* Session footer is optional but must have at least one field if present
-* All session fields (header and footer) must follow struct field rules
-* Header and footer field names must be unique within their respective sections
+- Session must have a description
+- Session header is required and must have at least one field
+- Session footer is optional but must have at least one field if present
+- All session fields (header and footer) must follow struct field rules
+- Header and footer field names must be unique within their respective sections
 
 ### Frame Rules
 
-* Frame must have a description
-* Frame must have at least one field
-* Frame fields must follow struct field rules
-* Frame field names must be unique
+- Frame must have a description
+- Frame must have at least one field
+- Frame fields must follow struct field rules
+- Frame field names must be unique
 
 ### General Rules
 
-* All names and descriptions must be non-empty strings
-* All dimensions must be non-negative
-* No circular references allowed in custom types
-* Frame types must reference valid primitive or custom types
-* Version must be "1.0"
+- All names and descriptions must be non-empty strings
+- All dimensions must be non-negative
+- No circular references allowed in custom types
+- Frame types must reference valid primitive or custom types
+- Version must be "1.0"
 
 ## Base Types
 
 The following base types are supported:
 
-* Integers: `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`
-* Floating Point: `float32`, `float64`
-* Boolean: `bool`
-* Complex: `struct`, `enum`
+- Integers: `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`
+- Floating Point: `float32`, `float64`
+- Boolean: `bool`
+- Complex: `struct`, `enum`

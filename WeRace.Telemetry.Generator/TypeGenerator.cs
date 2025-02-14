@@ -94,11 +94,14 @@ internal class TypeGenerator : GeneratorBase
       case "enum":
         GenerateEnum(source, typeName, type);
         break;
+      case "flags":
+        GenerateFlags(source, typeName, type);
+        break;
       case "struct":
         GenerateStruct(source, typeName, type);
         break;
       default:
-        throw new ArgumentException($"Custom types must be struct or enum, got: {type.Type}");
+        throw new ArgumentException($"Custom types must be struct, enum, or flags, got: {type.Type}");
     }
   }
 
@@ -111,7 +114,7 @@ internal class TypeGenerator : GeneratorBase
       source.AppendLine("/// </summary>");
     }
 
-    source.AppendLine($"public enum {GetSafeTypeName(typeName)} : uint");
+    source.AppendLine($"public enum {GetSafeTypeName(typeName)} : int");
     source.AppendLine("{");
 
     foreach (var value in type.Values)
@@ -123,6 +126,34 @@ internal class TypeGenerator : GeneratorBase
         source.AppendLine($"{Indent(1)}/// </summary>");
       }
       source.AppendLine($"{Indent(1)}{value.Name} = {value.Value},");
+    }
+
+    source.AppendLine("}");
+    source.AppendLine();
+  }
+
+  private static void GenerateFlags(StringBuilder source, string typeName, CustomType type)
+  {
+    if (type.Description is not "")
+    {
+      source.AppendLine("/// <summary>");
+      source.AppendLine($"/// {type.Description}");
+      source.AppendLine("/// </summary>");
+    }
+
+    source.AppendLine("[Flags]");
+    source.AppendLine($"public enum {GetSafeTypeName(typeName)} : ulong");
+    source.AppendLine("{");
+
+    foreach (var value in type.Values)
+    {
+      if (value.Description is not "")
+      {
+        source.AppendLine($"{Indent(1)}/// <summary>");
+        source.AppendLine($"{Indent(1)}/// {value.Description}");
+        source.AppendLine($"{Indent(1)}/// </summary>");
+      }
+      source.AppendLine($"{Indent(1)}{value.Name} = 0x{value.Value:X},");
     }
 
     source.AppendLine("}");
@@ -153,22 +184,9 @@ internal class TypeGenerator : GeneratorBase
 
   private static void GenerateSessionStruct(StringBuilder source, string typeName, SessionType session)
   {
-    if (session.Description is not "")
-    {
-      source.AppendLine("/// <summary>");
-      source.AppendLine($"/// {session.Description}");
-      source.AppendLine("/// </summary>");
-    }
-
     // Generate header struct
     source.AppendLine($"public struct {GetSafeTypeName(typeName)}SessionHeader");
     source.AppendLine("{");
-    if (session.Header.Description is not "")
-    {
-      source.AppendLine($"{Indent(1)}/// <summary>");
-      source.AppendLine($"{Indent(1)}/// {session.Header.Description}");
-      source.AppendLine($"{Indent(1)}/// </summary>");
-    }
     foreach (var field in session.Header.Fields)
     {
       GenerateField(source, field);
@@ -181,12 +199,6 @@ internal class TypeGenerator : GeneratorBase
     {
       source.AppendLine($"public struct {GetSafeTypeName(typeName)}SessionFooter");
       source.AppendLine("{");
-      if (session.Footer.Description is not "")
-      {
-        source.AppendLine($"{Indent(1)}/// <summary>");
-        source.AppendLine($"{Indent(1)}/// {session.Footer.Description}");
-        source.AppendLine($"{Indent(1)}/// </summary>");
-      }
       foreach (var field in session.Footer.Fields)
       {
         GenerateField(source, field);
@@ -198,20 +210,13 @@ internal class TypeGenerator : GeneratorBase
 
   private static void GenerateFrameStruct(StringBuilder source, string typeName, TelemetryDefinition definition)
   {
-    if (definition.Metadata.Description is not "")
-    {
-      source.AppendLine("/// <summary>");
-      source.AppendLine($"/// {definition.Metadata.Description}");
-      source.AppendLine("/// </summary>");
-    }
-
     source.AppendLine("[StructLayout(LayoutKind.Sequential, Pack = 8)]");
     source.AppendLine($"public struct {GetSafeTypeName(typeName)}");
     source.AppendLine("{");
 
-    foreach (var channel in definition.Channels)
+    foreach (var field in definition.Frame.Fields)
     {
-      GenerateChannel(source, channel);
+      GenerateField(source, field);
     }
 
     source.AppendLine("}");
@@ -243,40 +248,6 @@ internal class TypeGenerator : GeneratorBase
 
     var fieldType = field.Dimensions > 0 ? $"{typeName}[]" : typeName;
     source.AppendLine($"{Indent(1)}public {fieldType} {GetSafeFieldName(field.Name)};");
-  }
-
-  private static void GenerateChannel(StringBuilder source, Channel channel)
-  {
-    // Documentation
-    if (channel.Description is not "")
-    {
-      source.AppendLine($"{Indent(1)}/// <summary>");
-      source.AppendLine($"{Indent(1)}/// {channel.Description}");
-      if (channel.Unit is not "")
-        source.AppendLine($"{Indent(1)}/// Unit: {channel.Unit}");
-      source.AppendLine($"{Indent(1)}/// </summary>");
-    }
-
-    if (channel.Tags.Length > 0)
-    {
-      source.AppendLine($"{Indent(1)}/// <remarks>");
-      source.AppendLine($"{Indent(1)}/// Tags: {string.Join(", ", channel.Tags)}");
-      source.AppendLine($"{Indent(1)}/// </remarks>");
-    }
-
-    // Array attribute if needed
-    if (channel.Dimensions > 0)
-    {
-      source.AppendLine($"{Indent(1)}[MarshalAs(UnmanagedType.ByValArray, SizeConst = {channel.Dimensions})]");
-    }
-
-    // Channel field declaration
-    var typeName = TypeMappings.TryGetValue(channel.Type.ToLowerInvariant(), out var mappedType)
-        ? mappedType
-        : GetSafeTypeName(channel.Type);
-
-    var fieldType = channel.Dimensions > 0 ? $"{typeName}[]" : typeName;
-    source.AppendLine($"{Indent(1)}public {fieldType} {GetSafeFieldName(channel.Name)};");
   }
 
   private static string GetSafeTypeName(string name)
