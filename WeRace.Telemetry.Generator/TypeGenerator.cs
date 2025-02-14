@@ -255,10 +255,10 @@ internal class TypeGenerator : GeneratorBase
     // Split on underscores and other non-alphanumeric characters
     var parts = name.Split(new[] { '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-    // Convert each part to PascalCase
+    // Convert each part to PascalCase while preserving the rest of the capitalization
     var pascalParts = parts.Select(part =>
         part.Length > 0
-            ? char.ToUpperInvariant(part[0]) + part.Substring(1).ToLowerInvariant()
+            ? char.ToUpperInvariant(part[0]) + part.Substring(1)
             : "");
 
     var typeName = string.Concat(pascalParts);
