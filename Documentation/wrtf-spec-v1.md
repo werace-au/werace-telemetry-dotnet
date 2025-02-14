@@ -171,17 +171,17 @@ frame_time = session_timestamp + (tick_count * (1_000_000 / sample_rate))
 
 ### Frame Layout Format
 
-| Section      | Size   | Description             |
-| ------------ | ------ | ----------------------- |
-| Header       | Varies | Session header data     |
-| Frame Values | Varies | Sequential frame values |
-| Footer       | Varies | Session footer data     |
+| Section      | Size   | Description                                     |
+| ------------ | ------ | ----------------------------------------------- |
+| Frame Header | 8      | Frame tick count (uint64)                       |
+| Frame Data   | Varies | Sequential frame values according to schema     |
+| Padding      | Varies | Zero padding bytes to maintain 8-byte alignment |
 
 The total size of a frame is determined by:
 
-1. Size of the header
-2. Sum of all field sizes
-3. Size of the footer
+1. Size of the frame header (8 bytes)
+2. Sum of all frame data field sizes as defined in the schema
+3. Any necessary padding bytes to maintain 8-byte alignment
 
 ## 7. Data Types
 
